@@ -43,5 +43,11 @@
   },
   "engines": {
     "node": ">=18.0"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": false
   }
 }
