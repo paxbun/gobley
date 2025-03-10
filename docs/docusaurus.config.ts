@@ -68,6 +68,11 @@ const config: Config = {
           label: "Tutorial",
         },
         {
+          type: "docsVersionDropdown",
+          position: "right",
+          dropdownActiveClassDisabled: true,
+        },
+        {
           href: "https://github.com/gobley/gobley",
           label: "GitHub",
           position: "right",
