@@ -605,9 +605,9 @@ or [`Config.kt`](https://github.com/gobley/gobley/tree/v0.1.0/build-logic/gradle
 | `android_dynamic_library_dependencies` | String Array | The list of dynamic libraries required by your Rust library on Android without the prefix and the file extension.                                                                                                                                         |
 | `dynamic_library_dependencies`         | String Array | The list of dynamic libraries required by your Rust library on both Desktop JVM targets and Android targets.                                                                                                                                              |
 
-# Cross-compilation tips
+## Cross-compilation tips
 
-## Linux cross-compilation on Windows or macOS
+### Linux cross-compilation on Windows or macOS
 
 If this is your first time cross-compiling a Linux binary on macOS, you may encounter a linker
 error reporting that the linker has received some unknown command-line arguments. That happens
@@ -630,7 +630,7 @@ error: linker `cc` not found
   = note: program not found
 ```
 
-### Install Zig
+#### Install Zig
 
 When you want to build your application or library for Linux on Windows or macOS, you have to use a
 dedicated cross-compilation linker for Linux. There are two available options: GCC and Zig. The
@@ -672,7 +672,7 @@ On macOS:
 0.13.0
 ```
 
-### Make Cargo use Zig (Windows)
+#### Make Cargo use Zig (Windows)
 
 We make two batch scripts that uses the `zig` command. You can use any name, but we'll use the
 following names.
@@ -717,7 +717,7 @@ linker = "C:\\Users\\<user name>\\.cargo\\aarch64-unknown-linux-gnu.bat"
 
 You're ready to start building your library and application for Linux.
 
-### Make Cargo use Zig (macOS)
+#### Make Cargo use Zig (macOS)
 
 We make two shell scripts that uses the `zig` command. You can use any name, but we'll use the
 following names.
@@ -767,7 +767,7 @@ linker = "/Users/<user name>/.cargo/aarch64-unknown-linux-gnu-cc.sh"
 
 You're ready to start building your library and application for Linux.
 
-## LLVM version compatibility on Apple Platforms
+### LLVM version compatibility on Apple Platforms
 
 If you encounter an undefined symbols linker error like the following when building your Rust library that has
 a dependency on a C library for iOS, you may have an LLVM version compatibility issue.
@@ -833,7 +833,7 @@ To see which Rust version uses which LLVM version, see the Rust compiler
 [CHANGELOG](https://github.com/rust-lang/rust/blob/master/RELEASES.md#version-1820-2024-10-17). You can see
 LLVM version upgrade notes in `Internal Changes` sections.
 
-## C++ Runtime on Android NDK
+### C++ Runtime on Android NDK
 
 Android NDK has multiple kinds of C++ runtime libraries, so it is important to check which one you are using now.
 If you encounter a linker error (whether it's dynamic or static) mentioning functions like `__cxa_pure_virtual`,
@@ -968,7 +968,7 @@ cargo {
 }
 ```
 
-## Building for Windows on ARM
+### Building for Windows on ARM
 
 By default on an x64 machine, Visual Studio installs MSVC for x64/x86 only. If you try to link a
 program for ARM64 without the MSVC ARM64 toolchain, you may see an error that Cargo couldn't find
@@ -992,7 +992,7 @@ Make sure you installed the ARM64/ARM64EC compilers and linkers via Visual Studi
 Double-check whether you installed the ARM64 toolchain instead of the 32-bit ARM toolchain.
 This project does not support building for 32-bit ARM Windows.
 
-# Versioning
+## Versioning
 
 `gobley-uniffi-bindgen` is versioned separately from `uniffi-rs`. UniFFI follows the
 [SemVer rules from the Cargo Book](https://doc.rust-lang.org/cargo/reference/resolver.html#semver-compatibility)
@@ -1016,7 +1016,7 @@ Here is how `gobley-uniffi-bindgen` versions are tied to `uniffi-rs` are tied:
 |-------------------------------|-------------------|
 | v0.1.0                        | v0.25.2           |
 
-# Build and use locally
+## Build and use locally
 
 If you want to work on the bindgen or the Gradle plugin locally, you will have to do some additional Gradle
 configuration in order to use these local versions in your projects. Since this project contains many
@@ -1047,7 +1047,7 @@ If you want to run projects in `:tests:gradle` or `:examples`, install the follo
 See [`.meta/build-image/Dockerfile`](https://github.com/gobley/gobley/tree/v0.1.0/.meta/build-image/Dockerfile) for more
 details.
 
-## Option 1 - Dynamically include the plugins in your project
+### Option 1 - Dynamically include the plugins in your project
 
 Clone this repository and reference it from your project. Configure `dependencySubstitution` to use the local plugin
 version.
@@ -1091,7 +1091,7 @@ uniffi {
 }
 ```
 
-## Option 2 - Publish the plugins locally
+### Option 2 - Publish the plugins locally
 
 Clone the repository and build it.
 

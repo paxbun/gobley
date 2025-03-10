@@ -333,7 +333,8 @@ cdylib_name = "bar"
 
 The JVM `loadIndirect()` function in the bindings allow users to override the `cdylib_name` value using the
 `uniffi.component.<namespace name>.libraryOverride` system property as well. See the
-[`:tests:uniffi:ext-types:ext-types`](./tests/uniffi/ext-types/ext-types) test to see how this works. 
+[`:tests:uniffi:ext-types:ext-types`](https://github.com/gobley/gobley/tree/main/tests/uniffi/ext-types/ext-types) test
+to see how this works. 
 
 #### Configuring the platforms used by Android local unit tests
 
@@ -614,9 +615,9 @@ don't have to know all the details of the bindgen. Still, you can directly use t
 complicated build system.
 
 The minimum Rust version required to install `gobley-uniffi-bindgen` is `1.72`. Newer Rust versions should
-also work fine. The source code of the bindgen for Kotlin Multiplatform is in [`bindgen`](./bindgen). See comments in
-[`bindgen/src/main.rs`](./bindgen/src/main.rs) or
-[`BuildBindingsTask.kt`](./build-logic/gobley-gradle-uniffi/src/main/kotlin/tasks/BuildBindingsTask.kt)
+also work fine. The source code of the bindgen for Kotlin Multiplatform is in [`bindgen`](https://github.com/gobley/gobley/tree/main/bindgen).
+See comments in [`bindgen/src/main.rs`](https://github.com/gobley/gobley/tree/main/bindgen/src/main.rs) or
+[`BuildBindingsTask.kt`](https://github.com/gobley/gobley/tree/main/build-logic/gobley-gradle-uniffi/src/main/kotlin/tasks/BuildBindingsTask.kt)
 to see how to use the bindgen from the command line.
 
 To install the bindgen, run:
@@ -668,8 +669,8 @@ When the bindings are generated correctly, it has a directory structure like the
 ### Bindgen configuration
 
 Various settings used by the bindgen can be configured in `<manifest dir>/uniffi.toml`. For more
-details, see [`bindgen/src/gen_kotlin_multiplatform/mod.rs`](./bindgen/src/gen_kotlin_multiplatform/mod.rs)
-or [`Config.kt`](./build-logic/gobley-gradle-uniffi/src/main/kotlin/Config.kt).
+details, see [`bindgen/src/gen_kotlin_multiplatform/mod.rs`](https://github.com/gobley/gobley/tree/main/bindgen/src/gen_kotlin_multiplatform/mod.rs)
+or [`Config.kt`](https://github.com/gobley/gobley/tree/main/build-logic/gobley-gradle-uniffi/src/main/kotlin/Config.kt).
 
 | Configuration Name                     | Type         | Description                                                                                                                                                                                                                                               |
 |----------------------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -684,9 +685,9 @@ or [`Config.kt`](./build-logic/gobley-gradle-uniffi/src/main/kotlin/Config.kt).
 | `android_dynamic_library_dependencies` | String Array | The list of dynamic libraries required by your Rust library on Android without the prefix and the file extension.                                                                                                                                         |
 | `dynamic_library_dependencies`         | String Array | The list of dynamic libraries required by your Rust library on both Desktop JVM targets and Android targets.                                                                                                                                              |
 
-# Cross-compilation tips
+## Cross-compilation tips
 
-## Linux cross-compilation on Windows or macOS
+### Linux cross-compilation on Windows or macOS
 
 If this is your first time cross-compiling a Linux binary on macOS, you may encounter a linker
 error reporting that the linker has received some unknown command-line arguments. That happens
@@ -709,7 +710,7 @@ error: linker `cc` not found
   = note: program not found
 ```
 
-### Install Zig
+#### Install Zig
 
 When you want to build your application or library for Linux on Windows or macOS, you have to use a
 dedicated cross-compilation linker for Linux. There are two available options: GCC and Zig. The
@@ -751,7 +752,7 @@ On macOS:
 0.13.0
 ```
 
-### Make Cargo use Zig (Windows)
+#### Make Cargo use Zig (Windows)
 
 We make two batch scripts that uses the `zig` command. You can use any name, but we'll use the
 following names.
@@ -796,7 +797,7 @@ linker = "C:\\Users\\<user name>\\.cargo\\aarch64-unknown-linux-gnu.bat"
 
 You're ready to start building your library and application for Linux.
 
-### Make Cargo use Zig (macOS)
+#### Make Cargo use Zig (macOS)
 
 We make two shell scripts that uses the `zig` command. You can use any name, but we'll use the
 following names.
@@ -846,7 +847,7 @@ linker = "/Users/<user name>/.cargo/aarch64-unknown-linux-gnu-cc.sh"
 
 You're ready to start building your library and application for Linux.
 
-## LLVM version compatibility on Apple Platforms
+### LLVM version compatibility on Apple Platforms
 
 If you encounter an undefined symbols linker error like the following when building your Rust library that has
 a dependency on a C library for iOS, you may have an LLVM version compatibility issue.
@@ -912,7 +913,7 @@ To see which Rust version uses which LLVM version, see the Rust compiler
 [CHANGELOG](https://github.com/rust-lang/rust/blob/master/RELEASES.md#version-1820-2024-10-17). You can see
 LLVM version upgrade notes in `Internal Changes` sections.
 
-## C++ Runtime on Android NDK
+### C++ Runtime on Android NDK
 
 Android NDK has multiple kinds of C++ runtime libraries, so it is important to check which one you are using now.
 If you encounter a linker error (whether it's dynamic or static) mentioning functions like `__cxa_pure_virtual`,
@@ -1047,7 +1048,7 @@ cargo {
 }
 ```
 
-## Building for Windows on ARM
+### Building for Windows on ARM
 
 By default on an x64 machine, Visual Studio installs MSVC for x64/x86 only. If you try to link a
 program for ARM64 without the MSVC ARM64 toolchain, you may see an error that Cargo couldn't find
@@ -1071,7 +1072,7 @@ Make sure you installed the ARM64/ARM64EC compilers and linkers via Visual Studi
 Double-check whether you installed the ARM64 toolchain instead of the 32-bit ARM toolchain.
 This project does not support building for 32-bit ARM Windows.
 
-# Versioning
+## Versioning
 
 `gobley-uniffi-bindgen` is versioned separately from `uniffi-rs`. UniFFI follows the
 [SemVer rules from the Cargo Book](https://doc.rust-lang.org/cargo/reference/resolver.html#semver-compatibility)
