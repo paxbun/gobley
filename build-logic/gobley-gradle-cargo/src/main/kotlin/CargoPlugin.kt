@@ -457,7 +457,7 @@ class CargoPlugin : Plugin<Project> {
         }
 
         tasks.withType<Jar> {
-            if (name.lowercase().contains("android")) {
+            if (name.lowercase().contains("android") && variant != null) {
                 if (cargoBuildVariant.variant == variant!!) {
                     inputs.dir(copyDestination)
                     dependsOn(copyTask)
