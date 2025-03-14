@@ -262,6 +262,15 @@ class CargoPlugin : Plugin<Project> {
                 }
                 cargoBuildVariant.checkTaskProvider.configure {
                     dependsOn(rustUpTargetAddTask)
+                    if (cargoBuildVariant is CargoAndroidBuildVariant) {
+                        val environmentVariables = cargoBuildVariant.rustTarget.ndkEnvVariables(
+                            sdkRoot = androidDelegate.androidSdkRoot,
+                            apiLevel = androidDelegate.androidMinSdk,
+                            ndkVersion = androidDelegate.androidNdkVersion,
+                            ndkRoot = androidDelegate.androidNdkRoot,
+                        )
+                        additionalEnvironment.putAll(environmentVariables)
+                    }
                 }
             }
             for (kotlinTarget in cargoBuild.kotlinTargets) {
