@@ -24,6 +24,7 @@ import gobley.gradle.uniffi.tasks.BuildBindingsTask
 import gobley.gradle.uniffi.tasks.InstallBindgenTask
 import gobley.gradle.uniffi.tasks.MergeUniffiConfigTask
 import gobley.gradle.utils.DependencyUtils
+import gobley.gradle.utils.GradleUtils
 import gobley.gradle.utils.PluginUtils
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -435,11 +436,14 @@ class UniFfiPlugin : Plugin<Project> {
             "net.java.dev.jna:jna:${DependencyVersions.JNA}"
         )
         val jnaVersion = jnaDependency?.version ?: DependencyVersions.JNA
-        with(kotlinExtensionDelegate.sourceSets.androidMain(Variant.Debug)) {
-            if (uniFfiExtension.addDependencies.get()) {
-                dependencies {
-                    implementation("net.java.dev.jna:jna") {
-                        version { prefer(jnaVersion) }
+        val composePreviewVariant = GradleUtils.getComposePreviewVariant(gradle)
+        if (composePreviewVariant != null) {
+            with(kotlinExtensionDelegate.sourceSets.androidMain(composePreviewVariant)) {
+                if (uniFfiExtension.addDependencies.get()) {
+                    dependencies {
+                        implementation("net.java.dev.jna:jna") {
+                            version { prefer(jnaVersion) }
+                        }
                     }
                 }
             }

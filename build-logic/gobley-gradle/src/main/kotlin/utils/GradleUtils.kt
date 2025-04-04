@@ -7,9 +7,8 @@
 package gobley.gradle.utils
 
 import gobley.gradle.InternalGobleyGradleApi
-import org.gradle.api.Project
+import gobley.gradle.Variant
 import org.gradle.api.invocation.Gradle
-import kotlin.math.exp
 
 @InternalGobleyGradleApi
 object GradleUtils {
@@ -35,5 +34,14 @@ object GradleUtils {
 
     fun invokedByKotlinJvmBuild(gradle: Gradle): Boolean {
         return invokedByIde() && strictlyCalling(gradle, listOf(":classes"))
+    }
+
+    fun getComposePreviewVariant(gradle: Gradle): Variant? {
+        return when {
+            !invokedByIde() -> null
+            strictlyCalling(gradle, listOf(":compileDebugSources")) -> Variant.Debug
+            strictlyCalling(gradle, listOf(":compileReleaseSources")) -> Variant.Release
+            else -> null
+        }
     }
 }

@@ -444,9 +444,8 @@ class CargoPlugin : Plugin<Project> {
                     runtimeOnly(files(jarTask.flatMap { it.archiveFile }))
                 }
             }
-            // This is for Android Compose Preview
-            if (cargoBuildVariant.variant == Variant.Debug) {
-                with(kotlinExtensionDelegate.sourceSets.androidMain(Variant.Debug)) {
+            if (cargoBuildVariant.variant == GradleUtils.getComposePreviewVariant(gradle)) {
+                with(kotlinExtensionDelegate.sourceSets.androidMain(cargoBuildVariant.variant)) {
                     dependencies {
                         runtimeOnly(files(jarTask.flatMap { it.archiveFile }))
                     }

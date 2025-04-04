@@ -130,10 +130,10 @@ object DependencyUtils {
             currentProject.files(dependencies.artifacts.resolvedArtifacts.map { artifacts ->
                 artifacts.map { it.file }
             })
+        val composePreviewVariant = GradleUtils.getComposePreviewVariant(currentProject.gradle)
         PluginUtils.withKotlinPlugin(currentProject) { delegate ->
             if (delegate.androidTarget != null) {
-                // For Compose previews
-                if (variant == Variant.Debug) {
+                if (variant == composePreviewVariant) {
                     with(delegate.sourceSets.androidMain(variant)) {
                         dependencies {
                             runtimeOnly(dependencyJars)
@@ -254,12 +254,14 @@ object DependencyUtils {
             if (it.isEmpty()) currentProject.files()
             else "net.java.dev.jna:jna:${DependencyVersions.JNA}"
         }
+        val composePreviewVariant = GradleUtils.getComposePreviewVariant(currentProject.gradle)
         PluginUtils.withKotlinPlugin(currentProject) { delegate ->
             if (delegate.androidTarget != null) {
-                // For Compose previews
-                with(delegate.sourceSets.androidMain(Variant.Debug)) {
-                    dependencies {
-                        runtimeOnly(jnaDependency)
+                if (composePreviewVariant != null) {
+                    with(delegate.sourceSets.androidMain(composePreviewVariant)) {
+                        dependencies {
+                            runtimeOnly(jnaDependency)
+                        }
                     }
                 }
                 with(delegate.sourceSets.androidUnitTest) {
