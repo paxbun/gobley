@@ -444,8 +444,10 @@ class CargoPlugin : Plugin<Project> {
                     runtimeOnly(files(jarTask.flatMap { it.archiveFile }))
                 }
             }
-            if (cargoBuildVariant.variant == GradleUtils.getComposePreviewVariant(gradle)) {
-                with(kotlinExtensionDelegate.sourceSets.androidMain(cargoBuildVariant.variant)) {
+            if (cargoBuildVariant.variant == Variant.Debug
+                && cargoBuildVariant.variant == GradleUtils.getComposePreviewVariant(gradle)
+            ) {
+                with(kotlinExtensionDelegate.sourceSets.androidMain(Variant.Debug)) {
                     dependencies {
                         runtimeOnly(files(jarTask.flatMap { it.archiveFile }))
                     }

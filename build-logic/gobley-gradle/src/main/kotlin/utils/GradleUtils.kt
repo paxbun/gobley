@@ -16,6 +16,10 @@ object GradleUtils {
         return System.getProperty("idea.active").toBoolean()
     }
 
+    private fun invokedByIdeSync(): Boolean {
+        return invokedByIde() && System.getProperty("idea.sync.active").toBoolean()
+    }
+
     private fun strictlyCalling(
         gradle: Gradle,
         vararg expectedTaskRequests: List<String>,
@@ -44,6 +48,7 @@ object GradleUtils {
 
     fun getComposePreviewVariant(gradle: Gradle): Variant? {
         return when {
+            invokedByIdeSync() -> Variant.Debug
             !invokedByIde() -> null
             strictlyCalling(gradle, listOf(":compileDebugSources")) -> Variant.Debug
             strictlyCalling(gradle, listOf(":compileReleaseSources")) -> Variant.Release
