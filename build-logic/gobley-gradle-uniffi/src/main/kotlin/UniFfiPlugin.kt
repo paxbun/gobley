@@ -261,11 +261,7 @@ class UniFfiPlugin : Plugin<Project> {
         }
 
         @OptIn(InternalGobleyGradleApi::class)
-        DependencyUtils.addUniFfiConfigTasks(
-            this,
-            mergeUniffiConfig,
-            cargoExtension.cargoPackage.map { it.manifestFile },
-        )
+        DependencyUtils.addMergedUniffiConfigArtifact(this, mergeUniffiConfig)
 
         val buildBindings = tasks.register<BuildBindingsTask>("buildBindings") {
             group = TASK_GROUP

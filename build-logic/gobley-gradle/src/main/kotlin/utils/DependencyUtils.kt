@@ -18,7 +18,6 @@ import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.attributes.Attribute
-import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
@@ -210,27 +209,13 @@ object DependencyUtils {
                 uniffiUsage = "uniFfiConfig"
             )
         }
-        currentProject.configurations.resolvable("uniFfiCargoManifest") { configuration ->
-            configuration.addAttributes(
-                superConfiguration = uniFfiImplementationConfiguration.get(),
-                uniffiUsage = "cargoManifest"
-            )
-        }
-        currentProject.configurations.consumable("uniFfiCargoManifestConsumable") { configuration ->
-            configuration.addAttributes(
-                superConfiguration = uniFfiImplementationConfiguration.get(),
-                uniffiUsage = "cargoManifest"
-            )
-        }
     }
 
-    fun addUniFfiConfigTasks(
+    fun addMergedUniffiConfigArtifact(
         currentProject: Project,
         uniFfiConfigTask: TaskProvider<*>,
-        cargoManifest: Provider<RegularFile>,
     ) {
         currentProject.artifacts.add("uniFfiConfigurationConsumable", uniFfiConfigTask)
-        currentProject.artifacts.add("uniFfiCargoManifestConsumable", cargoManifest)
     }
 
     fun getExternalPackageUniFfiConfigurations(currentProject: Project): Provider<List<File>>? {
@@ -243,30 +228,27 @@ object DependencyUtils {
     }
 
     fun resolveUniFfiDependencies(currentProject: Project) {
-        val configuration = currentProject.configurations.findByName("uniFfiCargoManifest")
-            ?: return
-        val dependencies = configuration.incoming
-        val externalCargoManifests = dependencies.artifacts.resolvedArtifacts.map { artifacts ->
-            artifacts.map { it.file }
-        }
-        val jnaDependency = externalCargoManifests.map {
-            // Don't apply JNA when there's no dependency on UniFFI
-            if (it.isEmpty()) currentProject.files()
-            else "net.java.dev.jna:jna:${DependencyVersions.JNA}"
-        }
         val composePreviewVariant = GradleUtils.getComposePreviewVariant(currentProject.gradle)
         PluginUtils.withKotlinPlugin(currentProject) { delegate ->
             if (delegate.androidTarget != null) {
                 if (composePreviewVariant != null) {
                     with(delegate.sourceSets.androidMain(composePreviewVariant)) {
                         dependencies {
-                            runtimeOnly(jnaDependency)
+                            runtimeOnly("net.java.dev.jna:jna") {
+                                version {
+                                    it.prefer(DependencyVersions.JNA)
+                                }
+                            }
                         }
                     }
                 }
                 with(delegate.sourceSets.androidUnitTest) {
                     dependencies {
-                        runtimeOnly(jnaDependency)
+                        runtimeOnly("net.java.dev.jna:jna") {
+                            version {
+                                it.prefer(DependencyVersions.JNA)
+                            }
+                        }
                     }
                 }
             }
