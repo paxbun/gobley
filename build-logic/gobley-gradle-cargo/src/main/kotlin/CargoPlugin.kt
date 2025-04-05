@@ -43,6 +43,8 @@ import org.gradle.api.Task
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Delete
 import org.gradle.jvm.tasks.Jar
@@ -400,6 +402,23 @@ class CargoPlugin : Plugin<Project> {
                 }
                 dependencies {
                     runtimeOnly(files(jarTask.flatMap { it.archiveFile }))
+                }
+            }
+        }
+
+        @OptIn(InternalGobleyGradleApi::class)
+        if (
+            kotlinTarget !is KotlinAndroidTarget
+            && cargoBuildVariant.embedRustLibrary.get()
+            && cargoBuildVariant.variant == cargoBuildVariant.build.jvmPublishingVariant.get()
+            && cargoExtension.publishJvmArtifacts.get()
+            && kotlinExtensionDelegate.pluginId == PluginIds.KOTLIN_MULTIPLATFORM
+        ) {
+            plugins.withId("maven-publish") {
+                val publishing = extensions.getByType(PublishingExtension::class.java)
+                val publication = publishing.publications.getByName(kotlinTarget.name)
+                if (publication is MavenPublication) {
+                    publication.artifact(jarTask)
                 }
             }
         }
