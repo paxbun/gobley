@@ -21,8 +21,14 @@ object GradleUtils {
         vararg expectedTaskRequests: List<String>,
     ): Boolean {
         val taskRequests = gradle.startParameter.taskRequests.toMutableSet()
+        if (taskRequests.isEmpty()) {
+            return expectedTaskRequests.isEmpty()
+        }
         for (expectedTaskRequest in expectedTaskRequests) {
             val taskRequest = taskRequests.firstOrNull { taskRequest ->
+                if (expectedTaskRequest.size != taskRequest.args.size) {
+                    return@firstOrNull false
+                }
                 expectedTaskRequest.zip(taskRequest.args).all { (expected, actual) ->
                     actual.endsWith(expected)
                 }
