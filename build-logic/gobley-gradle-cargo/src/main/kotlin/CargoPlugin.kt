@@ -78,6 +78,7 @@ class CargoPlugin : Plugin<Project> {
         }
         cargoExtension = target.extensions.create<CargoExtension>(TASK_GROUP, target)
         cargoExtension.jvmVariant.convention(Variant.Debug)
+        cargoExtension.jvmPublishingVariant.convention(Variant.Release)
         cargoExtension.nativeVariant.convention(Variant.Debug)
         readVariantsFromXcode()
         cargoExtension.builds.native {
@@ -88,6 +89,7 @@ class CargoPlugin : Plugin<Project> {
         }
         cargoExtension.builds.jvm {
             jvmVariant.convention(cargoExtension.jvmVariant)
+            jvmPublishingVariant.convention(cargoExtension.jvmPublishingVariant)
         }
         @OptIn(InternalGobleyGradleApi::class)
         target.useGlobalLock()
