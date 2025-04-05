@@ -48,6 +48,15 @@ object GradleUtils {
 
     fun getComposePreviewVariant(gradle: Gradle): Variant? {
         return when {
+            // Compose previews seem to be use information from the model built during IDE sync.
+            // Since one of the dependencies of Compose previews, androidx.compose.ui:ui-tooling,
+            // is referenced as debugImplementation in the default template generated from
+            // Android Studio, and there is relatively small chance of users requiring to use
+            // the Rust library from release mode Compose previews, let's return Variant.Debug
+            // during IDE sync. See #94 for details.
+            //
+            // CargoPlugin's Project.configureJvmPostBuildTasks also considers debug mode Compose
+            // previews only.
             invokedByIdeSync() -> Variant.Debug
             !invokedByIde() -> null
             strictlyCalling(gradle, listOf(":compileDebugSources")) -> Variant.Debug

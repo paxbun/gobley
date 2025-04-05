@@ -444,6 +444,12 @@ class CargoPlugin : Plugin<Project> {
                     runtimeOnly(files(jarTask.flatMap { it.archiveFile }))
                 }
             }
+            // Only support debug mode Compose previews.
+            // Since one of the dependencies of Compose previews, androidx.compose.ui:ui-tooling,
+            // is referenced as debugImplementation in the default template generated from
+            // Android Studio, and there is relatively small chance of users requiring to use
+            // the Rust library from release mode Compose previews, let's just handle debug mode
+            // Compose previews. See #94 for details.
             if (cargoBuildVariant.variant == Variant.Debug
                 && cargoBuildVariant.variant == GradleUtils.getComposePreviewVariant(gradle)
             ) {
