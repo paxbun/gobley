@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/gobley/gobley/compare/v0.1.0...HEAD)
 
+### Breaking Changes
+
+- Separate artifacts for JVM runtime Rust dynamic
+  libraries ([#81](https://github.com/gobley/gobley/pull/81) & [#102](https://github.com/gobley/gobley/pull/102)).
+
 ### New Features
 
 - Stub generation for unsupported JS/WASM targets ([#29](https://github.com/gobley/gobley/pull/29)).
