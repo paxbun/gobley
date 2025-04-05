@@ -349,29 +349,6 @@ class CargoPlugin : Plugin<Project> {
         findDynamicLibrariesTask.configure {
             libraryPathsCacheFile.set(projectLayout.outputCacheFile(this, "libraryPathsCacheFile"))
         }
-        jarTask.configure {
-            val variantSuffix = when (val variant = cargoBuildVariant.variant) {
-                Variant.Debug -> "-$variant"
-                else -> ""
-            }
-            @OptIn(InternalGobleyGradleApi::class)
-            archiveClassifier.set(
-                when (kotlinExtensionDelegate.pluginId) {
-                    PluginIds.KOTLIN_JVM -> cargoBuildVariant.resourcePrefix.map { "$it$variantSuffix" }
-                    PluginIds.KOTLIN_ANDROID -> cargoBuildVariant.resourcePrefix.map {
-                        "android-local-$it$variantSuffix"
-                    }
-
-                    else -> cargoBuildVariant.resourcePrefix.map {
-                        when {
-                            kotlinTarget is KotlinAndroidTarget -> "android-local-$it$variantSuffix"
-                            else -> "${kotlinTarget.name}-$it$variantSuffix"
-                        }
-                    }
-                }
-            )
-            dependsOn(buildTask, findDynamicLibrariesTask)
-        }
 
         // For Kotlin/JVM projects without the application plugin or the Compose Multiplatform
         // plugin, the dynamic libraries must be copied in the resources directory to be loaded
