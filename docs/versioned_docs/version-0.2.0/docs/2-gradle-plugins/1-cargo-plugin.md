@@ -40,79 +40,6 @@ cargo {
 }
 ```
 
-## Configuring Cargo to use different Cargo features or build profiles
-
-If you want to use Cargo features or
-customized [Cargo profiles](https://doc.rust-lang.org/cargo/reference/profiles.html),
-you can configure them in the `cargo {}` block as well.
-
-```kotlin
-import gobley.gradle.cargo.profiles.CargoProfile
-
-cargo {
-    features.addAll("foo", "bar")
-    debug.profile = CargoProfile("my-debug")
-    release.profile = CargoProfile.Bench
-}
-```
-
-If you want to use different features for each variant (debug or release), you can configure them in
-the `debug {}` or `release {}` blocks.
-
-```kotlin
-cargo {
-    features.addAll("foo")
-    debug {
-        // Use "foo", "logging" for debug builds
-        features.addAll("logging")
-    }
-    release {
-        // Use "foo", "app-integrity-checks" for release builds
-        features.addAll("app-integrity-checks")
-    }
-}
-```
-
-`features` are inherited from the outer block to the inner block. To override this behavior in the
-inner block, use `.set()` or the `=` operator overloading.
-
-```kotlin
-cargo {
-    features.addAll("foo")
-    debug {
-        // Use "foo", "logging" for debug builds
-        features.addAll("logging")
-    }
-    release {
-        // Use "app-integrity-checks" (not "foo"!) for release builds
-        features.set(setOf("app-integrity-checks"))
-    }
-}
-```
-
-For configurations applied to all variants, you can use the `variants {}` block.
-
-```kotlin
-cargo {
-    variants {
-        features.addAll("another-feature")
-    }
-}
-```
-
-For Android and Apple platform builds invoked by Xcode, the plugin automatically decides which
-profile to use. For other targets, you can configure it with the `jvmVariant` or `nativeVariant`
-properties. When undecidable, these values default to `Variant.Debug`.
-
-```kotlin
-import gobley.gradle.Variant
-
-cargo {
-    jvmVariant = Variant.Release
-    nativeVariant = Variant.Debug
-}
-```
-
 ## The Cargo plugin only builds for required platforms
 
 Cargo build tasks are configured as the corresponding Kotlin target is added in the `kotlin {}`
@@ -452,6 +379,127 @@ cargo {
 Some directories like the NDK installation directory or the Cargo build output directory are already
 registered in `dynamicLibrarySearchPaths`. If your build system uses another directory, add that to
 this property.
+
+## Configuring Cargo to use different Cargo features or build profiles
+
+While it is unusual to use separate configurations for debugging and releasing on Java, you should
+care about the build variant when you're publishing an application or a library written in Rust.
+Gobley handles this discrepancy using **profiles** and **variants**. If you want to use customized
+[Cargo profiles](https://doc.rust-lang.org/cargo/reference/profiles.html) or different Cargo
+features for different Cargo profiles, you can configure them using these APIs.
+
+Gobley provides two variants: `Variant.Debug` and `Variant.Release`. You can then specify the Cargo
+profile to use for each variant in the `cargo {}` block.
+
+```kotlin
+import gobley.gradle.cargo.profiles.CargoProfile
+
+cargo {
+    debug.profile = CargoProfile("my-debug")
+    release.profile = CargoProfile.Bench
+}
+```
+
+If you want to use different Cargo features, you can configure them in the `cargo {}`, the
+`debug {}`, or the `release {}` blocks.
+
+```kotlin
+cargo {
+    features.addAll("foo")
+    debug {
+        // Use "foo", "logging" for debug builds
+        features.addAll("logging")
+    }
+    release {
+        // Use "foo", "app-integrity-checks" for release builds
+        features.addAll("app-integrity-checks")
+    }
+}
+```
+
+`features` are inherited from the outer block to the inner block. To override this behavior in the
+inner block, use `.set()` or the `=` operator overloading.
+
+```kotlin
+cargo {
+    features.addAll("foo")
+    debug {
+        // Use "foo", "logging" for debug builds
+        features.addAll("logging")
+    }
+    release {
+        // Use "app-integrity-checks" (not "foo"!) for release builds
+        features.set(setOf("app-integrity-checks"))
+    }
+}
+```
+
+For configurations applied to all variants, you can use the `variants {}` block.
+
+```kotlin
+cargo {
+    variants {
+        features.addAll("another-feature")
+    }
+}
+```
+
+## Be careful of the build variant used during publishing
+
+> :bulb: The Android Gradle plugin supports multiple build variants by default, and Gobley will
+> automatically invoke the debug build for the debug variant and the release build for the release
+> variant. Custom build variants for Android are not supported yet.
+
+For scenarios where the variant to use can't be chosen automatically, Gobley provides `jvmVariant`,
+`jvmPublishingVariant`, and `nativeVariant`. These properties can be configured inside the
+`cargo {}` or the `builds {}` blocks.
+
+```kotlin
+import gobley.gradle.Variant
+import gobley.gradle.cargo.dsl.*
+
+cargo {
+    jvmVariant = Variant.Release
+    jvmPublishingVariant = Variant.Release
+    nativeVariant = Variant.Debug
+    builds {
+        jvm {
+            jvmVariant = Variant.Release
+            jvmPublishingVariant = Variant.Release
+        }
+        native {
+            nativeVariant = Variant.Debug
+        }
+    }
+}
+```
+
+`jvmVariant` designates the variant to use when you hit the run button inside the IDE. It defaults
+to `Variant.Debug`. If you're using Gobley in an application project or a library project directly
+referenced by an application project, `jvmVariant` is used, which means you might be building and
+releasing the debug version of your application. On the other hand, `jvmPublishingVariant` is used
+when you publish a library. It defaults to `Variant.Release`. The publishing task depends on the JAR
+task selected by `jvmPublishingVariant`.
+
+Unlike the JVM variant properties, native targets only have `nativeVariant`. It defaults to
+`Variant.Debug`. When you invoke Gradle from Xcode, Gobley will read environment variables set by
+Xcode and automatically determine the value for `nativeVariant`. When you build for Windows or
+Linux, where such environment variables are not available, you should manually determine the value
+for `nativeVariant`. Even when you build for Apple platforms, if you're just publishing a library,
+you should be careful of the value of `nativeVariant`, as it doesn't use Xcode.
+
+You can use Gradle properties to control these values.
+
+```kotlin
+import gobley.gradle.Variant
+
+cargo {
+    // When you're using Gobley in an application project
+    jvmVariant = Variant(findProperty("my.project.jvm.variant") ?: "debug")
+    // When you build for native targets without Xcode
+    nativeVariant = Variant(findProperty("my.project.native.variant") ?: "debug")
+}
+```
 
 ## Enabling the nightly mode and building tier 3 Rust targets
 
