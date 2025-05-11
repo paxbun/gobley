@@ -45,7 +45,7 @@ Let's first create a new Kotlin/JVM project.
 
 ![The IntelliJ IDEA screen after the project opened](./2-tutorial-jvm/img-2.png)
 
-## Adding Rust to your Kotlin/JVM project.
+## Adding Rust to your Kotlin/JVM project
 
 Let's add a Cargo package to the Kotlin/JVM project.
 
