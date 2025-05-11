@@ -11,7 +11,7 @@ export default function GithubStargazersCountButton({
     <a
       href={`https://github.com/${repository}`}
       target="_blank"
-      className="navbar__item navbar__link header-github-link"
+      className="header-github-link"
       aria-label="GitHub repository"
     >
       <span className="header-github-link-stats header-github-link-repo-name">
