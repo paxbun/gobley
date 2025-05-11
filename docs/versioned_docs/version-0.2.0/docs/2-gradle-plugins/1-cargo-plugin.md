@@ -208,6 +208,8 @@ installed on the current system or not. The list of such targets by the build ho
 | Linux        | ✅       | ✅     | ✅     |
 | Visual C++   | ✅       | ❌     | ❌     |
 
+### Controlling the targets to build
+
 To build for specific targets only, you can configure that using the `embedRustLibrary` property.
 For example, to build a shared library for the current build host only, set this property to
 `rustTarget == GobleyHost.current.rustTarget`.
@@ -224,9 +226,9 @@ cargo {
 ```
 
 On Windows, both MinGW and Visual C++ can generate DLLs. By default, the Cargo plugin doesn't invoke
-the MinGW build for JVM when Visual C++ is available. To override this behavior, use the
-`embedRustLibrary` property like the following. Note that Windows on ARM is not available with
-MinGW.
+the MinGW build for JVM on Windows since Visual C++ is available. To override this behavior, use the
+`embedRustLibrary` property like the following. Note that MinGW Windows on ARM is not supported by
+Gobley.
 
 ```kotlin
 import gobley.gradle.GobleyHost
@@ -279,6 +281,67 @@ using the `uniffi.component.<namespace name>.libraryOverride` system property as
 `:tests:uniffi:ext-types:ext-types`](https://github.com/gobley/gobley/tree/main/tests/uniffi/ext-types/ext-types)
 test to see how this works.
 
+### Publishing JAR artifacts containing the Rust dynamic libraries
+
+Since the dynamic libraries built with Cargo are packaged as separate JAR files with different
+classifiers, you can publish the library for each platform on a different build machine. For
+example, you can configure the CI to build and publish for Windows and Linux on Windows and macOS on
+macOS. The Java part is platform-agnostic. You can publish it on any platform where you can use
+Java.
+
+To override the JAR classifier used by each platform, use the `jarTaskProvider` property.
+The `archiveClassifier` defaults to `rustTarget.jnaResourcePrefix + "-debug"` for debug builds and
+`rustTarget.jnaResourcePrefix` for release builds.
+
+```kotlin
+cargo {
+    builds {
+        macos {
+            debug.jarTaskProvider.configure {
+                // Set the JAR classifier to darwin-<arch>-unoptimized
+                archiveClassifier = rustTarget.jnaResourcePrefix + "-unoptimized"
+            }
+        }
+    }
+}
+```
+
+When you're developing a Kotlin Multiplatform project and have applied the `maven-publish` Gradle
+plugin, The JAR tasks are automatically added to the publication. For more details about using
+`maven-publish` with Kotlin Multiplatform, please
+refer [here](https://kotlinlang.org/docs/multiplatform-publish-lib.html). To disable this behavior,
+use the `publishJvmArtifacts` property.
+
+```kotlin
+cargo {
+    publishJvmArtifacts = false
+}
+```
+
+To use the published Rust dynamic library JAR artifacts, you have to specify the classifiers.
+
+```kotlin
+kotlin {
+    sourceSets {
+        val jvmMain by creating {
+            dependencies {
+                runtimeOnly(dependencies.variantOf("com.example.foo:foo-jvm:0.1.0") {
+                    classifier("darwin-aarch64")
+                })
+                // You can use the above with version catalogs as well
+                runtimeOnly(dependencies.variantOf(libs.example.foo) {
+                    classifier("darwin-aarch64")
+                })
+                // Add for the other platforms you're targeting as well
+                runtimeOnly(dependencies.variantOf(libs.example.foo) {
+                    classifier("win32-x86-64")
+                })
+            }
+        }
+    }
+}
+```
+
 ## Configuring the platforms used by Android local unit tests
 
 Android local unit tests requires JVM targets to be built, as they run in the host machine's JVM.
@@ -309,50 +372,32 @@ Local unit tests are successfully built even if there are no builds with `androi
 but you will encounter a runtime error when you invoke a Rust function from Kotlin.
 
 When you build or publish your Rust Android library separately and run Android local unit tests in
-another build, you also have to reference the JVM version of your library from the Android unit
-tests.
+another build, you also have to reference the JAR artifact containing the dynamic library built with
+Cargo. To find the JAR task generating such artifacts,
+see [Publishing JAR artifacts containing the Rust dynamic libraries](#publishing-jar-artifacts-containing-the-rust-dynamic-libraries).
 
-To build the JVM version, run the `<JVM target name>Jar` task. The name of the JVM target can be
-configured with the `jvm()` function, which defaults to `"jvm"`. For example, when the name of the
-JVM target is `"desktop"`:
-
-```kotlin
-kotlin {
-    jvm("desktop")
-}
-```
-
-the name of the task will be `desktopJar`.
-
-```shell
-# ./gradlew :your:library:<JVM target name>Jar
-./gradlew :your:library:desktopJar
-```
-
-The build output will be located in `build/libs/<project name>-<JVM target name>.jar`. In the above
-case, the name of the JAR file will be `<project name>-desktop.jar`. The JAR file then can be
-referenced using the `files` or the `fileTree` functions.
+When you want to build the Rust dynamic library JAR locally, you can reference the JAR file using
+the `files` or the `fileTree` functions.
 
 ```kotlin
 kotlin {
     sourceSets {
         getByName("androidUnitTest") {
             dependencies {
-                // implementation(files("<project name>-<JVM target name>.jar"))
-                implementation(files("library-desktop.jar"))
-                implementation("net.java.dev.jna:jna:5.13.0") // required to run
+                // runtimeOnly(files("<project name>-<JVM target name>-<version>-<classifier>.jar"))
+                runtimeOnly(files("foo-jvm-0.1.0-darwin-aarch64.jar"))
+                // You can add multiple invocations of runtimeOnly(...)
+                runtimeOnly(files("foo-jvm-0.1.0-win32-x86-64.jar"))
+                runtimeOnly("net.java.dev.jna:jna:5.17.0") // required to run if you're using UniFFI
             }
         }
     }
 }
 ```
 
-The above process can be automated using the `maven-publish` Gradle plugin. It publishes the JVM
-version of your library separately. For more details about using `maven-publish` with Kotlin
-Multiplatform, please refer [here](https://kotlinlang.org/docs/multiplatform-publish-lib.html).
-
-To publish your library to the local Maven repository on your system, run the `publishToMavenLocal`
-task.
+If you want to automate this process, you can publish the JVM version of your library and use it
+from the local unit test. For example, To publish your library to the local Maven repository on your
+system, run the `publishToMavenLocal` task.
 
 ```shell
 ./gradlew :your:project:publishToMavenLocal
@@ -360,7 +405,7 @@ task.
 
 In the local repository which is located in `~/.m2`, you will see that multiple artifacts including
 `<project name>` and `<project name>-<JVM target name>` are generated. To reference it, register the
-`mavenLocal()` repository and put the artifact name to `implementation()`.
+`mavenLocal()` repository and put the artifact name to `runtimeOnly()`.
 
 ```kotlin
 repositories {
@@ -373,8 +418,11 @@ kotlin {
         getByName("androidUnitTest") {
             dependencies {
                 // implementation("<group name>:<project name>-<JVM target name>:<version>")
-                implementation("your.library:library-desktop:0.1.0")
-                implementation("net.java.dev.jna:jna:5.13.0") // required to run
+                runtimeOnly(dependencies.variantOf("com.example.foo:foo-jvm:0.1.0") {
+                    // The archive classifier, which defaults to `rustTarget.jnaResourcePrefix`.
+                    classifier("darwin-aarch64")
+                })
+                runtimeOnly("net.java.dev.jna:jna:5.17.0") // required to run if you're using UniFFI
             }
         }
     }
