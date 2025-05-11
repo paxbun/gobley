@@ -434,6 +434,11 @@ cargo {
                     // Make Cargo build the standard library
                     extraArguments.add("-Zbuild-std")
                 }
+                // You can configure for the check task as well
+                checkTaskProvider.configure {
+                    nightly = true
+                    extraArguments.add("-Zbuild-std")
+                }
             }
         }
     }
