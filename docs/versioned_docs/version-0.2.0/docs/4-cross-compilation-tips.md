@@ -549,6 +549,49 @@ dependencies {
 }
 ```
 
+## Stripping debug symbols from Android NDK binaries
+
+One of the common concerns that Android developers have is that their app may be vulnerable to
+threads if attackers utilize this information. Both Cargo and Android Gradle Plugin provide options
+to control whether to strip debug information or not.
+
+By default, when you build a library using Cargo, even with a release profile, the debug information
+is included in the `.so` file. To prevent this, you can remove the debug information from the
+library using Cargo profiles like the following:
+
+```toml
+[package]
+# ...
+
+[profile.release]
+strip = "symbols"
+```
+
+On the other hand, when Gradle packages build results into an `.aar` file, the debug information is
+stripped by default. To preserve it, you can add the Rust library to the `keepDebugSymbols` property
+inside the `android { packaging { jniLibs {} } }` block.
+
+```kotlin
+android {
+    packaging {
+        jniLibs.keepDebugSymbols += "**/*.so"
+    }
+}
+```
+
+Before choosing which option to use, Let's dig into the exact process of how debug information is
+processed during the app build and within Google Play.
+
+### Debug symbols should be included in `.aar` files
+
+### Debug information are automatically extracted from libraries when packaging `.aab`
+
+
+
+### You can see the deobfuscated stack on the Google Play and the Firebase Crashlytics Consoles
+
+Your app 
+
 ## Building for Windows on ARM
 
 By default on an x64 machine, Visual Studio installs MSVC for x64/x86 only. If you try to link a
