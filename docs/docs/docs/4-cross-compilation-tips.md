@@ -93,7 +93,7 @@ If you installed Zig with WinGet, the content is:
 %LOCALAPPDATA%\Microsoft\WinGet\Links\zig.exe cc -target x86_64-linux-gnu %*
 ```
 
-Similarly, in `aarch64-unknown-linux-gnu-cc.sh`, put as follows:
+Similarly, in `aarch64-unknown-linux-gnu-cc.bat`, put as follows:
 
 ```batch
 @echo off
@@ -106,10 +106,10 @@ option is to modify `%USERPROFILE%\.cargo\config.toml` as follows.
 
 ```toml
 [target.x86_64-unknown-linux-gnu]
-linker = "C:\\Users\\<user name>\\.cargo\\x86_64-unknown-linux-gnu.bat"
+linker = "C:\\Users\\<user name>\\.cargo\\x86_64-unknown-linux-gnu-cc.bat"
 
 [target.aarch64-unknown-linux-gnu]
-linker = "C:\\Users\\<user name>\\.cargo\\aarch64-unknown-linux-gnu.bat"
+linker = "C:\\Users\\<user name>\\.cargo\\aarch64-unknown-linux-gnu-cc.bat"
 ```
 
 You're ready to start building your library and application for Linux.
