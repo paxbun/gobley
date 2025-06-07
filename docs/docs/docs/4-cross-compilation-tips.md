@@ -778,6 +778,24 @@ android {
 However, if your library is closed-source and you need to protect its internal details, you can
 strip the symbols using Cargo or Gradle, as mentioned earlier.
 
+## Use Link-Time Optimization (LTO) to reduce the size of the binary
+
+One common misconception about Rust is that its final binary sizes are inherently too large for
+practical use. While it's true that debug builds can be substantial, this is often due to the
+inclusion of the pre-built Rust standard library distributed via `rustup`, which can range from 50MB
+to 100MB. However, both Cargo and Kotlin/Native support Link-Time Optimization (LTO), to reduce the
+size of the binary. LTO analyzes the binary and prunes unused functions and global variables,
+significantly reducing the size of the binary. To enable LTO on the Cargo side, you can set
+`lto = true` using [Cargo profiles](https://doc.rust-lang.org/cargo/reference/profiles.html).
+
+```toml
+[profile.release]
+lto = true
+```
+
+On the other hand, Kotlin/Native enables LTO by default for release builds, so no additional
+configuration is required.
+
 ## Building for Windows on ARM
 
 By default on an x64 machine, Visual Studio installs MSVC for x64/x86 only. If you try to link a
