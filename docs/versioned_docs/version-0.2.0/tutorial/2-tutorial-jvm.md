@@ -2,11 +2,11 @@
 slug: /tutorial-jvm
 ---
 
-# Getting started (Kotlin/JVM)
+# Getting started (JVM)
 
 Welcome to Gobley! Gobley is a set of libraries and tools that help you mix Rust and Kotlin, so you
 can focus on implementing your business logic. In this tutorial, you will learn how to embed Rust
-code into your Kotlin project using Gobley. If you have trouble setting up your project, please
+code into your Kotlin/JVM project using Gobley. If you have trouble setting up your project, please
 create a question in [GitHub Discussions](https://github.com/gobley/gobley/discussions).
 
 ## Prerequisites
