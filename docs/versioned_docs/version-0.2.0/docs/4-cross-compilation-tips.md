@@ -164,11 +164,10 @@ linker = "/Users/<user name>/.cargo/aarch64-unknown-linux-gnu-cc.sh"
 
 You're ready to start building your library and application for Linux.
 
-## LLVM version compatibility on Apple Platforms
+## Be aware of deployment target version on Apple Platforms
 
-If you encounter an undefined symbols linker error like the following when building your Rust
-library that has a dependency on a C library for iOS, you may have an LLVM version compatibility
-issue.
+If you encounter a linker error like the one shown below while building your Rust library for iOS
+and your library depends on a C library, this might be due to an iOS version incompatibility.
 
 ```
 Undefined symbols for architecture arm64:
@@ -177,6 +176,44 @@ Undefined symbols for architecture arm64:
 ld: symbol(s) not found for architecture arm64
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
 ```
+
+This issue can occur with Rust 1.83 or newer if the C library you're linking against is built to
+target iOS 13 or higher. By default, Rust targets iOS 10.0, which means it passes linker flags like
+`-target arm64-apple-ios10.0.0` to the linker. When the linker encounters such flags, since
+`___chkstk_darwin` is for iOS 13 or higher,
+the linker doesn't link the library containing `___chkstk_darwin`, resulting in the linker error
+above.
+
+As stated in
+the [iOS Platform Support](https://doc.rust-lang.org/stable/rustc/platform-support/apple-ios.html)
+documentation, you can set the iOS version targeted by Rust via the `IPHONEOS_DEPLOYMENT_TARGET`
+environment variable. Likewise, Cargo also offers `TVOS_DEPLOYMENT_TARGET` or
+`WATCHOS_DEPLOYMENT_TARGET` for watchOS and tvOS, respectively. Setting these variables instructs
+Cargo to pass the specified version in the `-target` flag.
+
+You can configure these variables within Gradle using the following Gradle DSL:
+
+```kotlin
+import gobley.gradle.cargo.dsl.appleMobile
+
+cargo {
+    builds.appleMobile {
+        variants {
+            buildTaskProvider.configure {
+                when (rustTarget.cinteropName) {
+                    // Set the deployment target to the ones you need:
+                    "ios" -> additionalEnvironment.put("IPHONEOS_DEPLOYMENT_TARGET", "16.0.0")
+                    "tvos" -> additionalEnvironment.put("TVOS_DEPLOYMENT_TARGET", "16.0.0")
+                    "watchos" -> additionalEnvironment.put("WATCHOS_DEPLOYMENT_TARGET", "9.0.0")
+                    else -> {}
+                }
+            }
+        }
+    }
+}
+```
+
+## LLVM version compatibility on Apple Platforms
 
 To check your Rust toolchain's LLVM version, use `rustc --version --verbose`. For example,
 
