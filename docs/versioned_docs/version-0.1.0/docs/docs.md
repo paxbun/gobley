@@ -773,18 +773,9 @@ You're ready to start building your library and application for Linux.
 
 ### LLVM version compatibility on Apple Platforms
 
-If you encounter an undefined symbols linker error like the following when building your Rust library that has
-a dependency on a C library for iOS, you may have an LLVM version compatibility issue.
-
-```
-Undefined symbols for architecture arm64:
-  "___chkstk_darwin", referenced from:
-      <function name> in <library file name or object file name>
-ld: symbol(s) not found for architecture arm64
-clang: error: linker command failed with exit code 1 (use -v to see invocation)
-```
-
-To check your Rust toolchain's LLVM version, use `rustc --version --verbose`. For example,
+If you suspect that a linker error is due to an LLVM version incompatibility, consider downgrading
+the Rust version. To determine the LLVM version used by your current Rust toolchain, use
+`rustc --version --verbose`. For example,
 
 ```
 > rustc --version --verbose
@@ -812,7 +803,7 @@ InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault
 ```
 
 You can see Xcode 16.2 uses LLVM 16. So, the linker in Apple LLVM 16 tried to link object files that
-targets LLVM 19, which resulted in a linker error.
+target LLVM 19, which may be the reason for the linker error.
 
 To resolve this issue, try downgrading your Rust toolchain to a version that uses lower LLVM version.
 For example, Rust 1.81 uses LLVM 18, so downgrading to 1.81 might help.
