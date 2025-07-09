@@ -21,6 +21,7 @@ import gobley.gradle.uniffi.dsl.BindingsGenerationFromLibrary
 import gobley.gradle.uniffi.dsl.BindingsGenerationFromUdl
 import gobley.gradle.uniffi.dsl.UniFfiExtension
 import gobley.gradle.uniffi.tasks.BuildBindingsTask
+import gobley.gradle.uniffi.tasks.GenerateProguardRulesTask
 import gobley.gradle.uniffi.tasks.InstallBindgenTask
 import gobley.gradle.uniffi.tasks.MergeUniffiConfigTask
 import gobley.gradle.utils.DependencyUtils
@@ -308,6 +309,22 @@ class UniFfiPlugin : Plugin<Project> {
         tasks.withType<CInteropProcess> {
             dependsOn(buildBindings)
         }
+
+        @OptIn(InternalGobleyGradleApi::class)
+        if (::androidDelegate.isInitialized) {
+            val generateProguardRulesTask =
+                tasks.register<GenerateProguardRulesTask>("generateProguardRules") {
+                    outputFile.set(androidGeneratedProguardFile)
+                }
+
+            if (uniFfiExtension.generateProguardRules.get()) {
+                androidDelegate.addProguardFiles(
+                    project,
+                    androidGeneratedProguardFile.get(),
+                    generateProguardRulesTask,
+                )
+            }
+        }
     }
 
     private fun Project.configureCleanTasks() {
@@ -513,6 +530,9 @@ private val Project.nativeBindingsDirectory: Provider<Directory>
 
 private val Project.stubBindingsDirectory: Provider<Directory>
     get() = bindingsDirectory.map { it.dir("stubMain/kotlin") }
+
+private val Project.androidGeneratedProguardFile: Provider<RegularFile>
+    get() = bindingsDirectory.map { it.file("androidMain/generated-proguard-rules.txt") }
 
 private val Project.nativeBindingsCInteropDirectory: Provider<Directory>
     get() = bindingsDirectory.map { it.dir("nativeInterop/cinterop") }
