@@ -81,6 +81,27 @@ impl TraitWithForeign for RustTraitImpl {
     }
 }
 
+// A public struct implementing a public trait.
+#[derive(uniffi::Object)]
+pub struct StructWithTrait {
+    name: String,
+}
+
+#[uniffi::export]
+impl StructWithTrait {
+    #[uniffi::constructor]
+    fn new(name: String) -> Self {
+        Self { name }
+    }
+}
+
+#[uniffi::export]
+impl Trait for StructWithTrait {
+    fn concat_strings(&self, a: &str, b: &str) -> String {
+        format!("{}: {a}{b}", self.name)
+    }
+}
+
 #[derive(uniffi::Object)]
 pub struct Object;
 
@@ -213,6 +234,7 @@ pub enum MixedEnum {
     Int(i64),
     Both(String, i64),
     All { s: String, i: i64 },
+    Vec(Vec<String>),
 }
 
 #[uniffi::export]
@@ -240,6 +262,12 @@ pub enum BasicError {
     OsError,
     #[error("UnexpectedError")]
     UnexpectedError { reason: String },
+}
+
+#[derive(uniffi::Error, Debug)]
+pub enum SimpleError {
+    A,
+    B,
 }
 
 impl From<uniffi::UnexpectedUniFFICallbackError> for BasicError {

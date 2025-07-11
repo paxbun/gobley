@@ -178,5 +178,7 @@ class ProcMacroTest {
         val (s, i) = eb
         s shouldBe "hi"
         i shouldBe 2L
+
+        getMixedEnum(MixedEnum.Vec(listOf("hello"))) shouldBe MixedEnum.Vec(listOf("hello"))
     }
 }
