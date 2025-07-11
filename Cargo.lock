@@ -912,6 +912,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "gobley-fixture-large-enum"
+version = "0.1.0"
+dependencies = [
+ "gobley-fixture-build-common",
+ "uniffi",
+]
+
+[[package]]
 name = "gobley-fixture-proc-macro"
 version = "0.1.0"
 dependencies = [
