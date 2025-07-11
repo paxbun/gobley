@@ -27,6 +27,7 @@ members = [
     "tests/uniffi/futures",
     "tests/uniffi/keywords",
     "tests/uniffi/large-enum",
+    "tests/uniffi/large-error",
     "tests/uniffi/proc-macro",
     "tests/uniffi/simple-fns",
     "tests/uniffi/simple-iface",
