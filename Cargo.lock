@@ -862,6 +862,7 @@ name = "gobley-fixture-ext-types-uniffi-one"
 version = "0.1.0"
 dependencies = [
  "gobley-fixture-build-common",
+ "thiserror 1.0.58",
  "uniffi",
 ]
 

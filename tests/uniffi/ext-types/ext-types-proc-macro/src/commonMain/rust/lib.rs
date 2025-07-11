@@ -4,20 +4,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use custom::{Guid, Ouid2};
 use custom_types::Handle;
-use custom::Guid;
 use std::sync::Arc;
 use uniffi_one::{
     UniffiOneEnum, UniffiOneInterface, UniffiOneProcMacroType, UniffiOneTrait, UniffiOneType,
 };
 use url::Url;
 
-uniffi::use_udl_record!(uniffi_one, UniffiOneType);
-uniffi::use_udl_enum!(uniffi_one, UniffiOneEnum);
-uniffi::use_udl_object!(uniffi_one, UniffiOneInterface);
-uniffi::use_udl_record!(custom, Guid);
-uniffi::use_udl_record!(custom_types, Url);
-uniffi::use_udl_record!(custom_types, Handle);
+uniffi::use_remote_type!(custom_types::Url);
 
 #[derive(uniffi::Record)]
 pub struct CombinedType {
@@ -174,22 +169,11 @@ pub struct Uuid {
     val: String,
 }
 
-// Tell UniFfi we want to use am UniffiCustomTypeConverter to go to and
-// from a String.
-//  Note this could be done even if the above `struct` defn was external.
-uniffi::custom_type!(Uuid, String);
-
-impl UniffiCustomTypeConverter for Uuid {
-    type Builtin = String;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(Uuid { val })
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.val
-    }
-}
+// Define a custom type exactly like we would for UDL
+uniffi::custom_type!(Uuid, String, {
+    lower: |uuid| uuid.val,
+    try_lift: |s| Ok(Uuid { val: s}),
+});
 
 mod submodule {
     // A custom type using the "newtype" idiom.
@@ -226,6 +210,11 @@ fn get_newtype_handle_value(u: NewtypeHandle) -> i64 {
 #[uniffi::export]
 fn get_guid_procmacro(g: Option<Guid>) -> Guid {
     custom::get_guid(g)
+}
+
+#[uniffi::export]
+fn get_ouid2() -> Ouid2 {
+    Ouid2("hello".to_string())
 }
 
 uniffi::setup_scaffolding!("ext_types_proc_macro");

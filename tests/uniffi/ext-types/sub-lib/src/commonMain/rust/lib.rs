@@ -7,9 +7,6 @@
 use kmm_uniffi_one::{UniffiOneEnum, UniffiOneInterface, UniffiOneTrait};
 use std::sync::Arc;
 
-uniffi::use_udl_object!(kmm_uniffi_one, UniffiOneInterface);
-uniffi::use_udl_enum!(kmm_uniffi_one, UniffiOneEnum);
-
 #[derive(Default, uniffi::Record)]
 pub struct SubLibType {
     pub maybe_enum: Option<UniffiOneEnum>,

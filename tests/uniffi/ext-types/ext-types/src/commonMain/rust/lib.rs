@@ -10,26 +10,17 @@ use custom_types::Handle;
 use external_crate::{
     ExternalCrateDictionary, ExternalCrateInterface, ExternalCrateNonExhaustiveEnum,
 };
-use kmm_ext_types_custom::{ANestedGuid, Guid, Ouid};
+use kmm_ext_types_custom::{ANestedGuid, Guid, HandleU8, Ouid};
 use kmm_uniffi_one::{
-    UniffiOneEnum, UniffiOneInterface, UniffiOneProcMacroType, UniffiOneTrait, UniffiOneType,
-    UniffiOneUDLTrait,
+    UniffiOneEnum, UniffiOneError, UniffiOneErrorInterface, UniffiOneInterface,
+    UniffiOneProcMacroType, UniffiOneTLA, UniffiOneTrait, UniffiOneType, UniffiOneUDLTrait,
 };
 use std::sync::Arc;
 use sub_lib::SubLibType;
 use url::Url;
 
-// #1988
-uniffi::ffi_converter_forward!(
-    kmm_ext_types_custom::Ouid,
-    kmm_ext_types_custom::UniFfiTag,
-    crate::UniFfiTag
-);
-uniffi::ffi_converter_forward!(
-    kmm_ext_types_custom::ANestedGuid,
-    kmm_ext_types_custom::UniFfiTag,
-    crate::UniFfiTag
-);
+// Remote types require a macro call in the Rust source
+uniffi::use_remote_type!(custom_types::Url);
 
 pub struct CombinedType {
     pub uoe: UniffiOneEnum,
@@ -91,10 +82,7 @@ fn get_combined_type(existing: Option<CombinedType>) -> CombinedType {
 #[derive(Default, uniffi::Record)]
 pub struct ObjectsType {
     pub maybe_trait: Option<Arc<dyn UniffiOneTrait>>,
-    // XXX - can't refer to UniffiOneInterface here - #1854
-    //pub maybe_interface: Option<Arc<UniffiOneInterface>>,
-    // Use this in the meantime so the tests can still refer to it.
-    pub maybe_interface: Option<u8>,
+    pub maybe_interface: Option<Arc<UniffiOneInterface>>,
     pub sub: SubLibType,
 }
 
@@ -120,12 +108,19 @@ fn get_maybe_urls(urls: Vec<Option<Url>>) -> Vec<Option<Url>> {
     urls
 }
 
-// XXX - #1854
-// fn get_imported_guid(guid: Guid) -> Guid {
+#[uniffi::export]
+fn get_imported_guid(guid: Guid) -> Guid {
+    guid
+}
 
 #[uniffi::export]
 fn get_imported_ouid(ouid: Ouid) -> Ouid {
     ouid
+}
+
+#[uniffi::export]
+fn get_imported_handle_u8(h: Option<HandleU8>) -> HandleU8 {
+    h.unwrap_or(HandleU8(3))
 }
 
 // external custom types wrapping external custom types.
@@ -139,11 +134,13 @@ fn get_imported_nested_ouid(guid: Option<ANestedGuid>) -> ANestedGuid {
     guid.unwrap_or_else(|| ANestedGuid(Guid("nested".to_string())))
 }
 
-// A local custom type wrapping an external imported UDL type
-// XXX - #1854
-// pub struct NestedExternalGuid(pub Guid);
-// ...
-// fn get_nested_external_guid(nguid: Option<NestedExternalGuid>) -> NestedExternalGuid {
+pub struct NestedExternalGuid(pub Guid);
+
+#[uniffi::export]
+fn get_nested_external_guid(nguid: Option<NestedExternalGuid>) -> NestedExternalGuid {
+    nguid.unwrap_or_else(|| NestedExternalGuid(Guid("nested-external".to_string())))
+}
+uniffi::custom_newtype!(NestedExternalGuid, Guid);
 
 // A local custom type wrapping an external imported procmacro type
 pub struct NestedExternalOuid(pub Ouid);
@@ -169,6 +166,11 @@ fn get_maybe_uniffi_one_type(t: Option<UniffiOneType>) -> Option<UniffiOneType> 
 
 fn get_maybe_uniffi_one_types(ts: Vec<Option<UniffiOneType>>) -> Vec<Option<UniffiOneType>> {
     ts
+}
+
+#[uniffi::export]
+fn get_uniffi_one_tla() -> UniffiOneTLA {
+    unreachable!()
 }
 
 // An enum
@@ -197,8 +199,31 @@ fn get_uniffi_one_trait(t: Option<Arc<dyn UniffiOneTrait>>) -> Option<Arc<dyn Un
     t
 }
 
+#[uniffi::export]
+fn invoke_uniffi_one_trait(t: Arc<dyn UniffiOneTrait>) -> String {
+    t.hello()
+}
+
 fn get_uniffi_one_proc_macro_type(t: UniffiOneProcMacroType) -> UniffiOneProcMacroType {
     t
+}
+
+#[uniffi::export]
+fn throw_uniffi_one_error() -> Result<(), UniffiOneError> {
+    Err(UniffiOneError::Oops("oh no".to_string()))
+}
+
+#[uniffi::export]
+async fn throw_uniffi_one_error_async() -> Result<(), UniffiOneError> {
+    Err(UniffiOneError::Oops("oh no - async".to_string()))
+}
+
+// external interface errors don't quite work.
+#[uniffi::export]
+fn throw_uniffi_one_error_interface() -> Result<(), UniffiOneErrorInterface> {
+    Err(UniffiOneErrorInterface {
+        e: "interface oops".to_string(),
+    })
 }
 
 fn get_external_crate_interface(val: String) -> Arc<ExternalCrateInterface> {

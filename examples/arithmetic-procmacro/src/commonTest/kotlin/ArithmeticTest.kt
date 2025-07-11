@@ -6,7 +6,9 @@
 
 import gobley.uniffi.examples.arithmeticpm.*
 import io.kotest.assertions.throwables.shouldThrowExactly
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.test.Test
 
 class ArithmeticTest {
@@ -15,6 +17,7 @@ class ArithmeticTest {
         shouldThrowExactly<ArithmeticException.IntegerOverflow> {
             add(18446744073709551615uL, 1uL)
         }
+        5.shouldBeInstanceOf<Int>()
     }
 
     @Test
