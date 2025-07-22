@@ -25,47 +25,49 @@ namespace imported_types_lib {
 // A type defined in a .udl file in the `uniffi-one` crate (ie, in
 // `../../uniffi-one/src/uniffi-one.udl`)
 [External="kmm_uniffi_one"]
-typedef extern UniffiOneType;
+typedef dictionary UniffiOneType;
 
 // An enum in the same crate
 [External="kmm_uniffi_one"]
-typedef extern UniffiOneEnum;
+typedef enum UniffiOneEnum;
 
 // An interface in the same crate
-[ExternalInterface="kmm_uniffi_one"]
-typedef extern UniffiOneInterface;
+[External="kmm_uniffi_one"]
+typedef interface UniffiOneInterface;
 
 // An UDL defined trait
-[ExternalTrait="kmm_uniffi_one"]
-typedef extern UniffiOneUDLTrait;
+[External="kmm_uniffi_one"]
+typedef trait UniffiOneUDLTrait;
 
 // A type defined via procmacros in an external crate
-[ExternalExport="kmm_uniffi_one"]
-typedef extern UniffiOneProcMacroType;
+[External="kmm_uniffi_one"]
+typedef dictionary UniffiOneProcMacroType;
 
 // A Custom (ie, "wrapped") type defined externally in `../../custom-types/src/lib.rs`,
-// but because it's in a UDL it's still "external" from our POV, so same as the `.udl` type above.
-[External="kmm_ext_types_custom"]
-typedef extern Guid;
+[Custom="kmm_ext_types_custom"]
+typedef string Guid;
 
 // And re-use the `custom-types` example - this exposes `Url` and `Handle`
-[External="gobley_example_custom_types"]
-typedef extern Url;
+[Custom="gobley_example_custom_types"]
+typedef string Url;
 
-[External="gobley_example_custom_types"]
-typedef extern Handle;
+[Custom="gobley_example_custom_types"]
+typedef i64 Handle;
 
-// Here are some different kinds of "external" types - the types are described
+// Here are some different kinds of remote types - the types are described
 // in this UDL, but the types themselves are defined in a different crate.
+
+[Remote]
 dictionary ExternalCrateDictionary {
     string sval;
 };
 
+[Remote]
 interface ExternalCrateInterface {
     string value();
 };
 
-[NonExhaustive]
+[Remote, NonExhaustive]
 enum ExternalCrateNonExhaustiveEnum {
     "One",
     "Two",

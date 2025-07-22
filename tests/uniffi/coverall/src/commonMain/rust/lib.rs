@@ -10,6 +10,9 @@ use std::time::SystemTime;
 use once_cell::sync::Lazy;
 
 mod additional;
+#[cfg(test)]
+mod ffi_buffer_scaffolding_test;
+
 mod traits;
 pub use traits::{
     ancestor_names, get_string_util_traits, get_traits, make_rust_getters, test_getters,
@@ -247,6 +250,8 @@ pub struct DictWithDefaults {
     name: String,
     category: Option<String>,
     integer: u64,
+    item_list: Vec<String>,
+    item_map: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone)]
@@ -261,6 +266,23 @@ fn get_maybe_simple_dict(index: i8) -> MaybeSimpleDict {
             d: SimpleDict::default(),
         },
         1 => MaybeSimpleDict::Nah,
+        _ => unreachable!("invalid index: {index}"),
+    }
+}
+
+#[derive(Debug)]
+enum MaybeObject {
+    Obj { p: Arc<Patch> },
+    Nah,
+}
+
+#[uniffi::export]
+fn get_maybe_object(index: i8) -> MaybeObject {
+    match index {
+        0 => MaybeObject::Obj {
+            p: Arc::new(Patch { color: Color::Red }),
+        },
+        1 => MaybeObject::Nah,
         _ => unreachable!("invalid index: {index}"),
     }
 }
@@ -330,7 +352,7 @@ fn create_some_dict() -> SimpleDict {
         ]
         .into_iter()
         .collect(),
-        test_trait: Some(Arc::new(traits::Trait2::default())),
+        test_trait: Some(Arc::new(traits::Node::default())),
     }
 }
 
@@ -623,5 +645,15 @@ impl ISecond {
 }
 
 pub struct EmptyStruct;
+
+#[derive(Clone, Debug, thiserror::Error, PartialEq, Eq)]
+pub enum HTMLError {
+    #[error("InvalidHTML")]
+    InvalidHTML,
+}
+
+pub fn validate_html(_source: String) -> Result<(), HTMLError> {
+    Err(HTMLError::InvalidHTML)
+}
 
 uniffi::include_scaffolding!("coverall");

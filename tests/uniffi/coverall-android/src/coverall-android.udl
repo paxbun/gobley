@@ -36,6 +36,9 @@ namespace coverall {
     Getters test_round_trip_through_rust(Getters getters);
     void test_round_trip_through_foreign(Getters getters);
 
+    // Always throws an InvalidHTML error
+    [Throws=HTMLError]
+    void validate_html(string source);
 };
 
 dictionary SimpleDict {
@@ -84,11 +87,19 @@ dictionary DictWithDefaults {
     string name = "default-value";
     string? category = null;
     u64 integer = 31;
+    sequence<string> item_list = [];
+    record<string, string> item_map = {};
 };
 
 [Enum]
 interface MaybeSimpleDict {
     Yeah(SimpleDict d);
+    Nah();
+};
+
+[Enum]
+interface MaybeObject {
+    Obj(Patch p);
     Nah();
 };
 
@@ -259,7 +270,7 @@ interface NodeTrait {
     string name(); // The name of the this node
 
     /// Takes an `Arc<Self>` and stores it our parent node, dropping any existing / reference. Note
-    //you can create circular references with this.
+    /// you can create circular references with this.
     void set_parent(NodeTrait? parent);
 
     /// Returns what was previously set via `set_parent()`, or null.
@@ -297,3 +308,10 @@ interface ISecond {
 };
 
 dictionary EmptyStruct {};
+
+// Error class with a controversial camel case.  This can cause errors if we don't consistently
+// convert the name.
+[Error]
+enum HTMLError {
+    "InvalidHTML"
+};

@@ -14,6 +14,7 @@ import coverall.FalliblePatch
 import coverall.Getters
 import coverall.InternalException
 import coverall.NoPointer
+import coverall.Node
 import coverall.NodeTrait
 import coverall.OtherError
 import coverall.Patch
@@ -42,6 +43,7 @@ import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.kotest.matchers.doubles.ToleranceMatcher
 import io.kotest.matchers.floats.FloatToleranceMatcher
 import io.kotest.matchers.ints.shouldBeGreaterThan
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.atomicfu.locks.ReentrantLock
@@ -530,6 +532,16 @@ class CoverallTest {
             // not possible through the `NodeTrait` interface (see #1787).
         }
 
+        Node("node").let { n ->
+            n.describeParent() shouldBe "Some(Node { name: Some(\"via node\"), parent: Mutex { data: None, poisoned: false, .. } })"
+            // NOTE same re-wrap problem described in the Python tests.
+            n.setParent(n.getParent())
+            // Expect: as above
+            // Get: `Some(UniFFICallbackHandlerNodeTrait { handle: 18 })`
+            // assert(n.describeParent() == "Some(Node { name: Some(\"via node\"), parent: Mutex { data: None, poisoned: false, .. } })")
+            n.setParent(Node("parent"))
+        }
+
         makeRustGetters().let { rustGetters ->
             // Check that these don't cause use-after-free bugs
             testRoundTripThroughRust(rustGetters)
@@ -593,6 +605,8 @@ class CoverallTest {
         d.name shouldBe "default-value"
         d.category shouldBe null
         d.integer shouldBe 31UL
+        d.itemList should { it.isEmpty() }
+        d.itemMap should { it.isEmpty() }
 
         d = DictWithDefaults(name = "this", category = "that", integer = 42UL)
         d.name shouldBe "this"

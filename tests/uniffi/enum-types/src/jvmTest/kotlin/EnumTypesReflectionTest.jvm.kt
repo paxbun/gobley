@@ -14,12 +14,14 @@ import kotlin.test.Test
 class EnumTypesReflectionTest {
     @Test
     fun assertDestroyNotGenerated() {
+        // destroy function semantics
         // Assert that no destroy() function is created for simple Enum
         val simpleCat: Animal = Animal.Cat
         simpleCat::class.functions shouldNot exist { it.name == "destroy" }
 
-        // Assert that destroy() function is created for Enum with variants containing fields
-        val cat: AnimalAssociatedType = AnimalAssociatedType.Cat
-        cat::class.functions shouldHaveSingleElement { it.name == "destroy" }
+        // Assert that destroy() function is created for Enum with variants containing an object
+        // Even though we are creating a non-object variant we still get it.
+        val n: AnimalEnum = AnimalEnum.None
+        n::class.functions shouldHaveSingleElement { it.name == "destroy" }
     }
 }

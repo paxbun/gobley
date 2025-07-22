@@ -1,0 +1,16 @@
+[package]
+name = "gobley-fixture-large-enum"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "gobley_fixture_large_enum"
+crate-type = ["cdylib", "staticlib"]
+path = "src/commonMain/rust/lib.rs"
+
+[dependencies]
+uniffi = { workspace = true }
+
+[build-dependencies]
+gobley-fixture-build-common = { path = "../../build-common" }

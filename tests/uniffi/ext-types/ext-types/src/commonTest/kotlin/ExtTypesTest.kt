@@ -15,6 +15,16 @@ import io.ktor.http.Url
 class ExtTypesTest {
     @Test
     fun run() {
+        // First step: implement a trait from an external crate in Kotlin and pass it to a function from this
+        // crate.  This tests mozilla/uniffi-rs#2343 -- the codegen for this module needs to initialize the vtable from
+        // uniffi_one.
+        class KtUniffiOneImpl: UniffiOneTrait {
+            override fun hello(): String {
+                return "Hello from Kotlin"
+            }
+        }
+        invokeUniffiOneTrait(KtUniffiOneImpl()) shouldBe "Hello from Kotlin"
+
         val ct = getCombinedType(null)
         ct.uot.sval shouldBe "hello"
         ct.guid shouldBe  "a-guid"
@@ -41,6 +51,7 @@ class ExtTypesTest {
         getOuid("ouid") shouldBe "ouid"
         //getImportedGuid("guid") shouldBe "guid"
         getImportedOuid("ouid") shouldBe "ouid"
+        getImportedHandleU8(null) shouldBe 3u.toUByte()
 
         val uot = UniffiOneType("hello")
         getUniffiOneType(uot) shouldBe uot

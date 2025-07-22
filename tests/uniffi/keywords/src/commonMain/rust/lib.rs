@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#![allow(dead_code)]
+
 use std::{collections::HashMap, sync::Arc};
 
 pub fn r#if(_object: u8) {}
@@ -16,16 +18,33 @@ impl r#break {
 
 #[allow(non_camel_case_types)]
 trait r#continue {
-    #[allow(dead_code)]
-    fn r#return(&self, v: r#return) -> r#return;
-    #[allow(dead_code)]
-    fn r#continue(&self) -> Option<Box<dyn r#continue>>;
-    #[allow(dead_code)]
-    fn r#break(&self, _v: Option<Arc<r#break>>) -> HashMap<u8, Arc<r#break>>;
-    #[allow(dead_code)]
-    fn r#while(&self, _v: Vec<r#while>) -> r#while;
-    #[allow(dead_code)]
-    fn class(&self, _v: HashMap<u8, Vec<class>>) -> Option<HashMap<u8, Vec<class>>>;
+    fn r#return(&self, _v: r#return) -> r#return {
+        unimplemented!()
+    }
+    fn r#continue(&self) -> Option<Box<dyn r#continue>> {
+        unimplemented!()
+    }
+    fn r#break(&self, _v: Option<Arc<r#break>>) -> HashMap<u8, Arc<r#break>> {
+        unimplemented!()
+    }
+    fn r#while(&self, _v: Vec<r#while>) -> r#while {
+        unimplemented!()
+    }
+    fn class(&self, _v: HashMap<u8, Vec<class>>) -> Option<HashMap<u8, Vec<class>>> {
+        unimplemented!()
+    }
+}
+
+#[allow(non_camel_case_types)]
+trait r#true {
+    fn r#false(&self);
+}
+
+#[uniffi::export]
+impl r#true for r#break {
+    fn r#false(&self) {
+        unimplemented!()
+    }
 }
 
 #[allow(non_camel_case_types)]

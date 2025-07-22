@@ -24,7 +24,7 @@
 
 {%- macro to_raw_ffi_call(func, indent) -%}
                         {%- match func.throws_type() -%}
-                        {%- when Some with (e) -%}
+                        {%- when Some(e) -%}
                         uniffiRustCallWithError({{ e|type_name(ci) }}ErrorHandler)
                         {%- else -%}
                         uniffiRustCall
@@ -48,6 +48,14 @@
 {%- endmacro -%}
 
 {%- macro func_decl(func_decl, callable, indent, is_decl_override) %}
+    {%- if (!self::throws_external_error(callable, ci)) %}
+        {%- call render_func_decl(func_decl, callable, indent, is_decl_override) %}
+    {%- else %}
+// Sorry, the callable "{{ callable.name() }}" isn't supported.
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro render_func_decl(func_decl, callable, indent, is_decl_override) %}
                         {%- call docstring(callable, indent) -%}
                         {%- match callable.throws_type() -%}
                         {%-     when Some(throwable) %}
@@ -60,12 +68,20 @@
                             {%- call arg_list(callable, is_decl_override || !callable.takes_self()) -%}
                         )
                         {%- match callable.return_type() -%}
-                        {%-     when Some with (return_type) %}: {{ return_type|type_name(ci) -}}
+                        {%-     when Some(return_type) %}: {{ return_type|type_name(ci) -}}
                         {%-     else -%}
                         {%- endmatch -%}
 {% endmacro %}
 
 {%- macro func_decl_with_body(func_decl, callable, indent) %}
+    {%- if (!self::throws_external_error(callable, ci)) %}
+        {%- call render_func_decl_with_body(func_decl, callable, indent) %}
+    {%- else %}
+// Sorry, the callable "{{ callable.name() }}" isn't supported.
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro render_func_decl_with_body(func_decl, callable, indent) %}
                         {%- call docstring(callable, indent) -%}
                         {%- match callable.throws_type() -%}
                         {%-     when Some(throwable) %}
@@ -78,14 +94,14 @@
                             {%- call arg_list(callable, false) -%}
                         )
                         {%- match callable.return_type() -%}
-                        {%-     when Some with (return_type) %}: {{ return_type|type_name(ci) -}}
+                        {%-     when Some(return_type) %}: {{ return_type|type_name(ci) -}}
                         {%-     else -%}
                         {%- endmatch %} {
                             {%- if callable.is_async() %}
 {{ " "|repeat(indent) }}    return {% call call_async(callable, indent + 4) -%}
                             {%- else -%}
                             {%- match callable.return_type() -%}
-                            {%-     when Some with (return_type) %}
+                            {%-     when Some(return_type) %}
 {{ " "|repeat(indent) }}    return {{ return_type|lift_fn }}({%- call to_ffi_call(callable, indent + 4) -%})
                             {%-     else %}
 {{ " "|repeat(indent) }}    {% call to_ffi_call(callable, indent + 4) -%}
@@ -95,6 +111,14 @@
 {% endmacro %}
 
 {%- macro func_decl_with_stub(func_decl, callable, indent) %}
+    {%- if (!self::throws_external_error(callable, ci)) %}
+        {%- call render_func_decl_with_stub(func_decl, callable, indent) %}
+    {%- else %}
+// Sorry, the callable "{{ callable.name() }}" isn't supported.
+    {%- endif %}
+{%- endmacro -%}
+
+{%- macro render_func_decl_with_stub(func_decl, callable, indent) %}
                         {%- call docstring(callable, indent) %}
 {{ " "|repeat(indent) }}{% if func_decl.len() != 0 -%}{{ func_decl }} {% endif -%}
                         {%- if callable.is_async() -%}suspend {% endif -%}
@@ -102,7 +126,7 @@
                             {%- call arg_list(callable, false) -%}
                         )
                         {%- match callable.return_type() -%}
-                        {%-     when Some with (return_type) %}: {{ return_type|type_name(ci) -}}
+                        {%-     when Some(return_type) %}: {{ return_type|type_name(ci) -}}
                         {%-     else -%}
                         {%- endmatch %} {
 {{ " "|repeat(indent) }}    TODO()
@@ -130,7 +154,7 @@
 {{ " "|repeat(indent) }}    // lift function
                             {%- match callable.return_type() -%}
                             {%- when Some(return_type) -%}
-                            {%- if return_type|as_ffi_type|need_non_null_assertion %}
+                            {%- if return_type|as_ffi_type|ref|need_non_null_assertion %}
 {{ " "|repeat(indent) }}    { {{ return_type|lift_fn }}(it!!) },
                             {%- else %}
 {{ " "|repeat(indent) }}    { {{ return_type|lift_fn }}(it) },
@@ -179,7 +203,7 @@
 -#}
 {%- macro arg_list_ffi_decl(func, indent) -%}
                         {%- for arg in func.arguments() %}
-{{ " "|repeat(indent) }}{{ arg.name()|var_name }}: {{ arg.type_().borrow()|ffi_type_name_by_value }},
+{{ " "|repeat(indent) }}{{ arg.name()|var_name }}: {{ arg.type_().borrow()|ffi_type_name_by_value(ci) }},
                         {%- endfor -%}
                         {%- if func.has_rust_call_status_arg() %}
 {{ " "|repeat(indent) }}uniffiCallStatus: UniffiRustCallStatus,
@@ -190,12 +214,12 @@
     {%- for arg in func.arguments() -%}
         {%- if let Some(callback) = arg.type_().borrow()|ffi_as_callback(ci) -%}
         {%- if callback|ffi_callback_needs_casting_native %}
-        {{ arg.name()|var_name }} as {{ci.namespace()}}.cinterop.{{ arg.type_().borrow()|ffi_type_name_for_ffi_struct }},
+        {{ arg.name()|var_name }} as {{ci.namespace()}}.cinterop.{{ arg.type_().borrow()|ffi_type_name_for_ffi_struct(ci) }},
         {%- else %}
         {{ arg.name()|var_name }},
         {%- endif -%}
         {%- else %}
-        {{ arg.name()|var_name }}{{- arg.type_().borrow()|ffi_cast_to_local_rust_buffer_if_needed -}},
+        {{ arg.name()|var_name }}{{- arg.type_().borrow()|ffi_cast_to_local_rust_buffer_if_needed(ci) -}},
         {%- endif -%}
     {%- endfor -%}
     {%- if func.has_rust_call_status_arg() %}
