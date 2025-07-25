@@ -7,7 +7,9 @@
 import kotlin.test.Test
 import ext_types.*
 import custom_types.*
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import sub_lib.*
 import uniffi_one.*
 import io.ktor.http.Url
@@ -70,6 +72,21 @@ class ExtTypesTest {
         getMaybeUniffiOneEnum(null) shouldBe null
         getUniffiOneEnums(listOf(uoe)) shouldBe listOf(uoe)
         getMaybeUniffiOneEnums(listOf(uoe, null)) shouldBe listOf(uoe, null)
+
+        run {
+            val e = shouldThrow<UniffiOneException> {
+                throwUniffiOneError()
+            }
+            e.shouldBeTypeOf<UniffiOneException.Oops>()
+            e.v1 shouldBe "oh no"
+        }
+
+        run {
+            val e = shouldThrow<UniffiOneErrorInterface> {
+                throwUniffiOneErrorInterface()
+            }
+            e.message() shouldBe "interface oops"
+        }
 
         ct.ecd.sval shouldBe "ecd"
         getExternalCrateInterface("foo").value() shouldBe "foo"
