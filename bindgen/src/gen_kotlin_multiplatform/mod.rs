@@ -885,16 +885,6 @@ pub enum DataClassFieldType {
     NullableNonBytes,
 }
 
-// The following workaround will be fixed on the Gobley side before 0.3.0 is released.
-// A work around for #2392 - we can't handle functions with external errors.
-// fn can_render_callable(callable: &dyn Callable, ci: &ComponentInterface) -> bool {
-fn throws_external_error(callable: &dyn Callable, ci: &ComponentInterface) -> bool {
-    callable
-        .throws_type()
-        .map(|t| ci.is_external(t))
-        .unwrap_or(false)
-}
-
 mod filters {
     pub use uniffi_bindgen::backend::filters::*;
     use uniffi_bindgen::{backend::filters::to_askama_error, interface::ffi::ExternalFfiMetadata};
