@@ -2,8 +2,8 @@
 
 @Structure.FieldOrder("code", "errorBuf")
 internal open class UniffiRustCallStatusStruct(
-    @JvmField internal var code: Byte,
-    @JvmField internal var errorBuf: RustBufferByValue,
+    @JvmField var code: Byte,
+    @JvmField var errorBuf: RustBufferByValue,
 ) : Structure() {
     constructor(): this(0.toByte(), RustBufferByValue())
 

@@ -4,9 +4,9 @@
 open class RustBufferStruct(
     // Note: `capacity` and `len` are actually `ULong` values, but JVM only supports signed values.
     // When dealing with these fields, make sure to call `toULong()`.
-    @JvmField internal var capacity: Long,
-    @JvmField internal var len: Long,
-    @JvmField internal var data: Pointer?,
+    @JvmField var capacity: Long,
+    @JvmField var len: Long,
+    @JvmField var data: Pointer?,
 ) : Structure() {
     constructor(): this(0.toLong(), 0.toLong(), null)
 
@@ -73,8 +73,8 @@ internal fun RustBufferByReference.getValue(): RustBufferByValue {
 
 @Structure.FieldOrder("len", "data")
 internal open class ForeignBytesStruct : Structure() {
-    @JvmField internal var len: Int = 0
-    @JvmField internal var data: Pointer? = null
+    @JvmField var len: Int = 0
+    @JvmField var data: Pointer? = null
 
     internal class ByValue : ForeignBytes(), Structure.ByValue
 }
