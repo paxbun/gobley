@@ -93,6 +93,10 @@ pub enum ConfigKotlinTarget {
     Android,
     #[serde(rename = "native")]
     Native,
+    #[serde(rename = "js")]
+    Js,
+    #[serde(rename = "wasmjs")]
+    WasmJs,
     #[serde(rename = "stub")]
     Stub,
 }
@@ -258,6 +262,8 @@ pub struct MultiplatformBindings {
     pub jvm: Option<String>,
     pub android: Option<String>,
     pub native: Option<String>,
+    pub js: Option<String>,
+    pub wasmjs: Option<String>,
     pub stub: Option<String>,
     pub header: Option<String>,
 }
@@ -305,6 +311,20 @@ pub fn generate_bindings(
             .context("failed to render Kotlin/Native bindings")
     })?;
 
+    let js = run_with_target(config, ConfigKotlinTarget::Js, || {
+        WasmJsKotlinWrapper::new("js", config.clone(), ci)
+            .context("failed to create a JS binding generator")?
+            .render()
+            .context("failed to render Kotlin/JS bindings")
+    })?;
+
+    let wasmjs = run_with_target(config, ConfigKotlinTarget::WasmJs, || {
+        WasmJsKotlinWrapper::new("wasmjs", config.clone(), ci)
+            .context("failed to create a WASM JS binding generator")?
+            .render()
+            .context("failed to render Kotlin/JS bindings")
+    })?;
+
     let stub = run_with_target(config, ConfigKotlinTarget::Stub, || {
         StubKotlinWrapper::new("stub", config.clone(), ci)
             .context("failed to create a stub binding generator")?
@@ -324,6 +344,8 @@ pub fn generate_bindings(
         jvm,
         android,
         native,
+        js,
+        wasmjs,
         stub,
         header,
     })
@@ -491,6 +513,13 @@ kotlin_wrapper!(
 
 kotlin_type_renderer!(NativeTypeRenderer, "native/Types.kt");
 kotlin_wrapper!(NativeKotlinWrapper, NativeTypeRenderer, "native/wrapper.kt");
+
+kotlin_type_renderer!(WasmJsTypeRenderer, "wasm+js/Types.kt");
+kotlin_wrapper!(
+    WasmJsKotlinWrapper,
+    WasmJsTypeRenderer,
+    "wasm+js/wrapper.kt"
+);
 
 kotlin_type_renderer!(StubTypeRenderer, "stub/Types.kt");
 kotlin_wrapper!(StubKotlinWrapper, StubTypeRenderer, "stub/wrapper.kt");
