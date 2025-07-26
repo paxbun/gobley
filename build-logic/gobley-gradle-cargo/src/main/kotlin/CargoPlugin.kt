@@ -6,6 +6,7 @@
 
 package gobley.gradle.cargo
 
+import com.android.build.gradle.internal.tasks.factory.dependsOn
 import gobley.gradle.AppleSdk
 import gobley.gradle.GobleyHost
 import gobley.gradle.InternalGobleyGradleApi
@@ -19,8 +20,11 @@ import gobley.gradle.cargo.dsl.CargoJvmBuild
 import gobley.gradle.cargo.dsl.CargoJvmBuildVariant
 import gobley.gradle.cargo.dsl.CargoNativeBuild
 import gobley.gradle.cargo.dsl.CargoNativeBuildVariant
+import gobley.gradle.cargo.dsl.CargoWasmBuild
+import gobley.gradle.cargo.dsl.CargoWasmBuildVariant
 import gobley.gradle.cargo.dsl.jvm
 import gobley.gradle.cargo.dsl.native
+import gobley.gradle.cargo.dsl.wasm
 import gobley.gradle.cargo.tasks.CargoCleanTask
 import gobley.gradle.cargo.tasks.CargoTask
 import gobley.gradle.cargo.tasks.RustUpTargetAddTask
@@ -85,6 +89,7 @@ class CargoPlugin : Plugin<Project> {
         cargoExtension.jvmVariant.convention(Variant.Debug)
         cargoExtension.jvmPublishingVariant.convention(Variant.Release)
         cargoExtension.nativeVariant.convention(Variant.Debug)
+        cargoExtension.wasmVariant.convention(Variant.Debug)
         readVariantsFromXcode()
         cargoExtension.builds.native {
             nativeVariant.convention(
@@ -95,6 +100,9 @@ class CargoPlugin : Plugin<Project> {
         cargoExtension.builds.jvm {
             jvmVariant.convention(cargoExtension.jvmVariant)
             jvmPublishingVariant.convention(cargoExtension.jvmPublishingVariant)
+        }
+        cargoExtension.builds.wasm {
+            wasmVariant.convention(cargoExtension.wasmVariant)
         }
         @OptIn(InternalGobleyGradleApi::class)
         target.useGlobalLock()
@@ -301,8 +309,8 @@ class CargoPlugin : Plugin<Project> {
                 }
             }
             for (kotlinTarget in cargoBuild.kotlinTargets) {
-                when (kotlinTarget) {
-                    is KotlinJvmTarget, is KotlinWithJavaTarget<*, *> -> {
+                when (kotlinTarget.platformType) {
+                    KotlinPlatformType.jvm -> {
                         cargoBuild as CargoJvmBuild<*>
                         cargoBuild.variants {
                             configureJvmPostBuildTasks(
@@ -314,7 +322,7 @@ class CargoPlugin : Plugin<Project> {
                         }
                     }
 
-                    is KotlinAndroidTarget -> {
+                    KotlinPlatformType.androidJvm -> {
                         if (cargoBuild is CargoJvmBuild<*>) {
                             if (jvmTarget == null) {
                                 cargoBuild.variants {
@@ -322,7 +330,7 @@ class CargoPlugin : Plugin<Project> {
                                         kotlinTarget,
                                         // cargoBuild.jvmVariant is checked inside
                                         this,
-                                        kotlinTarget,
+                                        kotlinTarget as KotlinAndroidTarget,
                                     )
                                 }
                             }
@@ -343,13 +351,23 @@ class CargoPlugin : Plugin<Project> {
                         }
                     }
 
-                    is KotlinNativeTarget -> {
+                    KotlinPlatformType.native -> {
                         cargoBuild as CargoNativeBuild<*>
                         configureNativeCompilation(
-                            kotlinTarget,
+                            kotlinTarget as KotlinNativeTarget,
                             cargoBuild.variant(cargoBuild.nativeVariant.get())
                         )
                     }
+
+                    KotlinPlatformType.js, KotlinPlatformType.wasm -> {
+                        cargoBuild as CargoWasmBuild
+                        configureWasmCompilation(
+                            kotlinTarget as KotlinJsIrTarget,
+                            cargoBuild.variant(cargoBuild.wasmVariant.get())
+                        )
+                    }
+
+                    else -> {}
                 }
             }
         }
@@ -564,6 +582,28 @@ class CargoPlugin : Plugin<Project> {
             compileTaskProvider.configure {
                 compilerOptions.optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
             }
+        }
+
+        tasks.named("check") {
+            dependsOn(checkTask)
+        }
+    }
+
+    private fun Project.configureWasmCompilation(
+        kotlinTarget: KotlinJsIrTarget,
+        cargoBuildVariant: CargoWasmBuildVariant,
+    ) {
+        val wasmTargetType = kotlinTarget.wasmTargetType
+        if (wasmTargetType == KotlinWasmTargetType.WASI) {
+            // WASM WASI is not supported yet
+            return
+        }
+
+        val buildTask = cargoBuildVariant.buildTaskProvider
+        val checkTask = cargoBuildVariant.checkTaskProvider
+
+        kotlinTarget.compilations.getByName("main") {
+            compileTaskProvider.dependsOn(buildTask)
         }
 
         tasks.named("check") {
