@@ -182,16 +182,13 @@ class CargoPlugin : Plugin<Project> {
 
     @OptIn(InternalGobleyGradleApi::class)
     private fun Project.checkKotlinTargets() {
-        val hasJsTargets =
-            kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.js }
-        if (hasJsTargets) {
-            project.logger.warn("JS targets are added, but UniFFI KMP bindings does not support JS targets yet.")
-        }
-
-        val hasWasmTargets =
-            kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.wasm }
-        if (hasWasmTargets) {
-            project.logger.warn("WASM targets are added, but UniFFI KMP bindings does not support WASM targets yet.")
+        val hasWasmWasiTargets =
+            kotlinExtensionDelegate.targets.any {
+                it.platformType == KotlinPlatformType.wasm
+                        && (it as KotlinJsIrTarget).wasmTargetType == KotlinWasmTargetType.WASI
+            }
+        if (hasWasmWasiTargets) {
+            project.logger.warn("WASM WASI targets are added, but Gobley does not support WASM WASI targets yet.")
         }
 
         val hasAndroidJvmTargets =
