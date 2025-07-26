@@ -31,6 +31,7 @@ import gobley.gradle.rust.CrateType
 import gobley.gradle.rust.targets.RustAndroidTarget
 import gobley.gradle.rust.targets.RustJvmTarget
 import gobley.gradle.rust.targets.RustTarget
+import gobley.gradle.rust.targets.RustWasmTarget
 import gobley.gradle.tasks.useGlobalLock
 import gobley.gradle.utils.DependencyUtils
 import gobley.gradle.utils.GradleUtils
@@ -58,6 +59,8 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinWithJavaTarget
+import org.jetbrains.kotlin.gradle.targets.js.KotlinWasmTargetType
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 class CargoPlugin : Plugin<Project> {
@@ -168,14 +171,32 @@ class CargoPlugin : Plugin<Project> {
     }
 
     private fun KotlinTarget.requiredRustTargets(): List<RustTarget> {
-        return when (this) {
-            is KotlinJvmTarget, is KotlinWithJavaTarget<*, *> -> GobleyHost.current.platform.supportedTargets.filterIsInstance<RustJvmTarget>()
-            is KotlinAndroidTarget -> {
+        return when (platformType) {
+            KotlinPlatformType.jvm -> {
+                GobleyHost.current.platform.supportedTargets.filterIsInstance<RustJvmTarget>()
+            }
+
+            KotlinPlatformType.androidJvm -> {
                 // listOf(GobleyHost.current.rustTarget) is for Android local unit tests.
                 listOf(GobleyHost.current.rustTarget) + RustAndroidTarget.values()
             }
 
-            is KotlinNativeTarget -> listOf(RustTarget(konanTarget))
+            KotlinPlatformType.native -> {
+                listOf(RustTarget((this as KotlinNativeTarget).konanTarget))
+            }
+
+            KotlinPlatformType.js -> {
+                RustWasmTarget.values().toList()
+            }
+
+            KotlinPlatformType.wasm -> {
+                // WASI is not supported yet
+                when ((this as KotlinJsIrTarget).wasmTargetType) {
+                    KotlinWasmTargetType.JS -> RustWasmTarget.values().toList()
+                    else -> listOf()
+                }
+            }
+
             else -> listOf()
         }
     }
