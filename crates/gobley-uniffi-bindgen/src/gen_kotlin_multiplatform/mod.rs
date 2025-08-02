@@ -93,6 +93,8 @@ pub enum ConfigKotlinTarget {
     Android,
     #[serde(rename = "native")]
     Native,
+    #[serde(rename = "js")]
+    Js,
     #[serde(rename = "stub")]
     Stub,
 }
@@ -273,6 +275,7 @@ pub struct MultiplatformBindings {
     pub jvm: Option<String>,
     pub android: Option<String>,
     pub native: Option<String>,
+    pub js: Option<String>,
     pub stub: Option<String>,
     pub header: Option<String>,
 }
@@ -320,6 +323,13 @@ pub fn generate_bindings(
             .context("failed to render Kotlin/Native bindings")
     })?;
 
+    let js = run_with_target(config, ConfigKotlinTarget::Js, || {
+        JsKotlinWrapper::new("js", Some(Visibility::Public), config.clone(), ci)
+            .context("failed to create a JS binding generator")?
+            .render()
+            .context("failed to render Kotlin/JS bindings")
+    })?;
+
     let stub = run_with_target(config, ConfigKotlinTarget::Stub, || {
         StubKotlinWrapper::new("stub", Some(Visibility::Public), config.clone(), ci)
             .context("failed to create a stub binding generator")?
@@ -339,6 +349,7 @@ pub fn generate_bindings(
         jvm,
         android,
         native,
+        js,
         stub,
         header,
     })
@@ -532,6 +543,9 @@ kotlin_wrapper!(
 
 kotlin_type_renderer!(NativeTypeRenderer, "native/Types.kt");
 kotlin_wrapper!(NativeKotlinWrapper, NativeTypeRenderer, "native/wrapper.kt");
+
+kotlin_type_renderer!(JsTypeRenderer, "js/Types.kt");
+kotlin_wrapper!(JsKotlinWrapper, JsTypeRenderer, "js/wrapper.kt");
 
 kotlin_type_renderer!(StubTypeRenderer, "stub/Types.kt");
 kotlin_wrapper!(StubKotlinWrapper, StubTypeRenderer, "stub/wrapper.kt");
