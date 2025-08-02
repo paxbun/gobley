@@ -77,6 +77,9 @@ impl BindingGenerator for KotlinBindingGenerator {
             if let Some(native) = bindings.native {
                 write_bindings_target(ci, settings, config, "native", native);
             }
+            if let Some(js) = bindings.js {
+                write_bindings_target(ci, settings, config, "js", js);
+            }
             if let Some(stub) = bindings.stub {
                 write_bindings_target(ci, settings, config, "stub", stub);
             }
