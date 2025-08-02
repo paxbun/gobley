@@ -49,7 +49,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinMetadataTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinWithJavaTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
@@ -253,11 +252,12 @@ class UniFfiPlugin : Plugin<Project> {
             @OptIn(InternalGobleyGradleApi::class)
             kotlinTargets.set(
                 kotlinExtensionDelegate.targets.mapNotNull {
-                    when (it) {
-                        is KotlinMetadataTarget -> null
-                        is KotlinJvmTarget, is KotlinWithJavaTarget<*, *> -> "jvm"
-                        is KotlinAndroidTarget -> "android"
-                        is KotlinNativeTarget -> "native"
+                    when (it.platformType) {
+                        KotlinPlatformType.common -> null
+                        KotlinPlatformType.jvm -> "jvm"
+                        KotlinPlatformType.androidJvm -> "android"
+                        KotlinPlatformType.native -> "native"
+                        KotlinPlatformType.js -> "js"
                         else -> "stub"
                     }
                 }
@@ -387,27 +387,29 @@ class UniFfiPlugin : Plugin<Project> {
 
         @OptIn(InternalGobleyGradleApi::class)
         kotlinExtensionDelegate.targets.configureEach {
-            when (this) {
-                is KotlinMetadataTarget -> configureKotlinCommonTarget()
-                is KotlinJvmTarget, is KotlinWithJavaTarget<*, *> -> {
+            when (platformType) {
+                KotlinPlatformType.common -> configureKotlinCommonTarget()
+                KotlinPlatformType.jvm -> {
                     if (kotlinExtensionDelegate.pluginId == PluginIds.KOTLIN_JVM) {
                         configureKotlinCommonTarget()
                     }
                     configureKotlinJvmTarget()
                 }
 
-                is KotlinAndroidTarget -> {
+                KotlinPlatformType.androidJvm -> {
                     if (kotlinExtensionDelegate.pluginId == PluginIds.KOTLIN_ANDROID) {
                         configureKotlinCommonTarget()
                     }
                     configureKotlinAndroidTarget()
                 }
 
-                is KotlinNativeTarget -> configureKotlinNativeTarget(
-                    this,
+                KotlinPlatformType.native -> configureKotlinNativeTarget(
+                    this as KotlinNativeTarget,
                     dummyDefFile,
                     generateDummyDefFileTask,
                 )
+
+                KotlinPlatformType.js -> configureKotlinJsTarget()
 
                 else -> configureUnsupportedTarget(this)
             }
@@ -529,6 +531,13 @@ class UniFfiPlugin : Plugin<Project> {
         }
     }
 
+    private fun Project.configureKotlinJsTarget() {
+        @OptIn(InternalGobleyGradleApi::class)
+        with(kotlinExtensionDelegate.sourceSets.jsMain) {
+            kotlin.srcDir(jsBindingsDirectory)
+        }
+    }
+
     private fun Project.configureUnsupportedTarget(kotlinTarget: KotlinTarget) {
         kotlinTarget.compilations.getByName("main").defaultSourceSet {
             kotlin.srcDir(stubBindingsDirectory)
@@ -553,6 +562,9 @@ private val Project.androidBindingsDirectory: Provider<Directory>
 
 private val Project.nativeBindingsDirectory: Provider<Directory>
     get() = bindingsDirectory.map { it.dir("nativeMain/kotlin") }
+
+private val Project.jsBindingsDirectory: Provider<Directory>
+    get() = bindingsDirectory.map { it.dir("jsMain/kotlin") }
 
 private val Project.stubBindingsDirectory: Provider<Directory>
     get() = bindingsDirectory.map { it.dir("stubMain/kotlin") }
