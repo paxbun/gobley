@@ -4,6 +4,10 @@
 
 package {{ config.package_name() }}
 
+// Contains loading, initialization code,
+// and the FFI Function declarations.
+{% include "NamespaceLibraryTemplate.kt" %}
+
 // Public interface members begin here.
 {{ type_helper_code }}
 
