@@ -16,6 +16,7 @@ import gobley.gradle.cargo.dsl.CargoJvmBuild
 import gobley.gradle.cargo.dsl.CargoNativeBuild
 import gobley.gradle.kotlin.GobleyKotlinExtensionDelegate
 import gobley.gradle.rust.targets.RustTarget
+import gobley.gradle.rust.targets.RustWasmTarget
 import gobley.gradle.uniffi.dsl.BindingsGeneration
 import gobley.gradle.uniffi.dsl.BindingsGenerationFromLibrary
 import gobley.gradle.uniffi.dsl.BindingsGenerationFromUdl
@@ -43,6 +44,7 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
@@ -79,6 +81,7 @@ class UniFfiPlugin : Plugin<Project> {
 
     private fun applyAfterEvaluate(target: Project): Unit = with(target) {
         findRequiredExtensions()
+        checkKotlinTargets()
         configureBindingTasks()
         configureKotlin()
         configureCleanTasks()
@@ -131,6 +134,21 @@ class UniFfiPlugin : Plugin<Project> {
         )
     }
 
+    @OptIn(InternalGobleyGradleApi::class)
+    private fun Project.checkKotlinTargets() {
+        val hasJsTargets =
+            kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.js }
+        if (hasJsTargets) {
+            project.logger.warn("JS targets are added, but the UniFFI plugin does not support JS targets yet.")
+        }
+
+        val hasWasmTargets =
+            kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.wasm }
+        if (hasWasmTargets) {
+            project.logger.warn("WASM targets are added, but the UniFFI plugin does not support WASM targets yet.")
+        }
+    }
+
     private fun Project.configureBindingTasks() {
         val bindingsGeneration = bindingsGeneration
 
@@ -163,6 +181,11 @@ class UniFfiPlugin : Plugin<Project> {
 
             (androidTargetsToBuild + jvmTargetsToBuild + nativeTargetsToBuild).first()
         }
+
+        if (buildRustTarget is RustWasmTarget) {
+            throw GradleException("$buildRustTarget not available for UniFFI. Try building with other targets.")
+        }
+
         val build = cargoExtension.builds.findByRustTarget(buildRustTarget)
             ?: throw GradleException("Cargo build for $buildRustTarget not available")
 

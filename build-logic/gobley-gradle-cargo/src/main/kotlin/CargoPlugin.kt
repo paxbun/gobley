@@ -6,6 +6,7 @@
 
 package gobley.gradle.cargo
 
+import com.android.build.gradle.internal.tasks.factory.dependsOn
 import gobley.gradle.AppleSdk
 import gobley.gradle.GobleyHost
 import gobley.gradle.InternalGobleyGradleApi
@@ -19,10 +20,14 @@ import gobley.gradle.cargo.dsl.CargoJvmBuild
 import gobley.gradle.cargo.dsl.CargoJvmBuildVariant
 import gobley.gradle.cargo.dsl.CargoNativeBuild
 import gobley.gradle.cargo.dsl.CargoNativeBuildVariant
+import gobley.gradle.cargo.dsl.CargoWasmBuild
+import gobley.gradle.cargo.dsl.CargoWasmBuildVariant
 import gobley.gradle.cargo.dsl.jvm
 import gobley.gradle.cargo.dsl.native
+import gobley.gradle.cargo.dsl.wasm
 import gobley.gradle.cargo.tasks.CargoCleanTask
 import gobley.gradle.cargo.tasks.CargoTask
+import gobley.gradle.cargo.tasks.InstallWasmTransformerTask
 import gobley.gradle.cargo.tasks.RustUpTargetAddTask
 import gobley.gradle.cargo.tasks.RustUpTask
 import gobley.gradle.cargo.utils.register
@@ -31,6 +36,7 @@ import gobley.gradle.rust.CrateType
 import gobley.gradle.rust.targets.RustAndroidTarget
 import gobley.gradle.rust.targets.RustJvmTarget
 import gobley.gradle.rust.targets.RustTarget
+import gobley.gradle.rust.targets.RustWasmTarget
 import gobley.gradle.tasks.useGlobalLock
 import gobley.gradle.utils.DependencyUtils
 import gobley.gradle.utils.GradleUtils
@@ -47,6 +53,7 @@ import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Delete
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.named
@@ -58,6 +65,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinWithJavaTarget
+import org.jetbrains.kotlin.gradle.targets.js.ir.KotlinJsIrTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 class CargoPlugin : Plugin<Project> {
@@ -82,6 +90,7 @@ class CargoPlugin : Plugin<Project> {
         cargoExtension.jvmVariant.convention(Variant.Debug)
         cargoExtension.jvmPublishingVariant.convention(Variant.Release)
         cargoExtension.nativeVariant.convention(Variant.Debug)
+        cargoExtension.wasmVariant.convention(Variant.Debug)
         readVariantsFromXcode()
         cargoExtension.builds.native {
             nativeVariant.convention(
@@ -92,6 +101,9 @@ class CargoPlugin : Plugin<Project> {
         cargoExtension.builds.jvm {
             jvmVariant.convention(cargoExtension.jvmVariant)
             jvmPublishingVariant.convention(cargoExtension.jvmPublishingVariant)
+        }
+        cargoExtension.builds.wasm {
+            wasmVariant.convention(cargoExtension.wasmVariant)
         }
         @OptIn(InternalGobleyGradleApi::class)
         target.useGlobalLock()
@@ -168,30 +180,34 @@ class CargoPlugin : Plugin<Project> {
     }
 
     private fun KotlinTarget.requiredRustTargets(): List<RustTarget> {
-        return when (this) {
-            is KotlinJvmTarget, is KotlinWithJavaTarget<*, *> -> GobleyHost.current.platform.supportedTargets.filterIsInstance<RustJvmTarget>()
-            is KotlinAndroidTarget -> {
+        return when (platformType) {
+            KotlinPlatformType.jvm -> {
+                GobleyHost.current.platform.supportedTargets.filterIsInstance<RustJvmTarget>()
+            }
+
+            KotlinPlatformType.androidJvm -> {
                 // listOf(GobleyHost.current.rustTarget) is for Android local unit tests.
                 listOf(GobleyHost.current.rustTarget) + RustAndroidTarget.values()
             }
 
-            is KotlinNativeTarget -> listOf(RustTarget(konanTarget))
+            KotlinPlatformType.native -> {
+                listOf(RustTarget((this as KotlinNativeTarget).konanTarget))
+            }
+
+            KotlinPlatformType.js -> {
+                RustWasmTarget.values().toList()
+            }
+
             else -> listOf()
         }
     }
 
     @OptIn(InternalGobleyGradleApi::class)
     private fun Project.checkKotlinTargets() {
-        val hasJsTargets =
-            kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.js }
-        if (hasJsTargets) {
-            project.logger.warn("JS targets are added, but UniFFI KMP bindings does not support JS targets yet.")
-        }
-
         val hasWasmTargets =
             kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.wasm }
         if (hasWasmTargets) {
-            project.logger.warn("WASM targets are added, but UniFFI KMP bindings does not support WASM targets yet.")
+            project.logger.warn("WASM targets are added, but Gobley does not support WASM targets yet.")
         }
 
         val hasAndroidJvmTargets =
@@ -236,6 +252,12 @@ class CargoPlugin : Plugin<Project> {
                 it is KotlinJvmTarget || it is KotlinWithJavaTarget<*, *>
             }
         }
+        val wasmBindgenInstallTask =
+            tasks.register<InstallWasmTransformerTask>("installWasmTransformer") {
+                group = TASK_GROUP
+                binaryCrateSource.set(cargoExtension.wasmTransformerSource)
+                installDirectory.set(layout.buildDirectory.dir("gobley-tools-install/wasm-transformer"))
+            }
         for (cargoBuild in cargoExtension.builds) {
             val rustUpTargetAddTask =
                 tasks.register<RustUpTargetAddTask>({ +cargoBuild.rustTarget }) {
@@ -283,8 +305,8 @@ class CargoPlugin : Plugin<Project> {
                 }
             }
             for (kotlinTarget in cargoBuild.kotlinTargets) {
-                when (kotlinTarget) {
-                    is KotlinJvmTarget, is KotlinWithJavaTarget<*, *> -> {
+                when (kotlinTarget.platformType) {
+                    KotlinPlatformType.jvm -> {
                         cargoBuild as CargoJvmBuild<*>
                         cargoBuild.variants {
                             configureJvmPostBuildTasks(
@@ -296,7 +318,7 @@ class CargoPlugin : Plugin<Project> {
                         }
                     }
 
-                    is KotlinAndroidTarget -> {
+                    KotlinPlatformType.androidJvm -> {
                         if (cargoBuild is CargoJvmBuild<*>) {
                             if (jvmTarget == null) {
                                 cargoBuild.variants {
@@ -304,7 +326,7 @@ class CargoPlugin : Plugin<Project> {
                                         kotlinTarget,
                                         // cargoBuild.jvmVariant is checked inside
                                         this,
-                                        kotlinTarget,
+                                        kotlinTarget as KotlinAndroidTarget,
                                     )
                                 }
                             }
@@ -325,13 +347,24 @@ class CargoPlugin : Plugin<Project> {
                         }
                     }
 
-                    is KotlinNativeTarget -> {
+                    KotlinPlatformType.native -> {
                         cargoBuild as CargoNativeBuild<*>
                         configureNativeCompilation(
-                            kotlinTarget,
+                            kotlinTarget as KotlinNativeTarget,
                             cargoBuild.variant(cargoBuild.nativeVariant.get())
                         )
                     }
+
+                    KotlinPlatformType.js -> {
+                        cargoBuild as CargoWasmBuild
+                        configureWasmCompilation(
+                            kotlinTarget as KotlinJsIrTarget,
+                            cargoBuild.variant(cargoBuild.wasmVariant.get()),
+                            wasmBindgenInstallTask,
+                        )
+                    }
+
+                    else -> {}
                 }
             }
         }
@@ -546,6 +579,37 @@ class CargoPlugin : Plugin<Project> {
             compileTaskProvider.configure {
                 compilerOptions.optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
             }
+        }
+
+        tasks.named("check") {
+            dependsOn(checkTask)
+        }
+    }
+
+    private fun Project.configureWasmCompilation(
+        kotlinTarget: KotlinJsIrTarget,
+        cargoBuildVariant: CargoWasmBuildVariant,
+        wasmBindgenInstallTask: TaskProvider<InstallWasmTransformerTask>,
+    ) {
+        val buildTask = cargoBuildVariant.buildTaskProvider
+        val checkTask = cargoBuildVariant.checkTaskProvider
+
+        cargoBuildVariant.transformWasmProvider.configure {
+            wasmTransformer.set(wasmBindgenInstallTask.get().wasmTransformer)
+        }
+
+        if (!cargoBuildVariant.embedRustLibrary.get())
+            return
+
+        @OptIn(InternalGobleyGradleApi::class)
+        kotlinExtensionDelegate.sourceSets.run {
+            jsMain.kotlin.srcDir(
+                cargoBuildVariant.transformWasmProvider.flatMap { it.outputDirectory }
+            )
+        }
+
+        kotlinTarget.compilations.getByName("main") {
+            compileTaskProvider.dependsOn(buildTask)
         }
 
         tasks.named("check") {
