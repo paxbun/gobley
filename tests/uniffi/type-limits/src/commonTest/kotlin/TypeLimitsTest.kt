@@ -12,8 +12,9 @@ import kotlin.test.*
 class TypeLimitsTest {
     @Test
     fun testStringLimits() {
-        // TODO: Okio Buffer.writeUtf8 does not throw. See ByteBuffer.fromUtf8.
-        // takeString("\ud800")
+        shouldThrow<CharacterCodingException> {
+            takeString("\ud800")
+        }
         takeString("") shouldBe ""
         takeString("愛") shouldBe "愛"
         takeString("💖") shouldBe "💖"
