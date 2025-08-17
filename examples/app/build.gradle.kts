@@ -2,6 +2,7 @@ import gobley.gradle.GobleyHost
 import gobley.gradle.rust.dsl.useRustUpLinker
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.jetbrains.kotlin.konan.target.Architecture
 
 plugins {
     kotlin("multiplatform")
@@ -11,6 +12,7 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     androidTarget {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_17
@@ -22,10 +24,68 @@ kotlin {
         mingwX64(),
     ).forEach {
         it.binaries.executable {
-            entryPoint = "dev.gobley.uniffi.examples.app.main"
+            entryPoint = "gobley.uniffi.examples.app.main"
         }
         it.compilations.configureEach {
             useRustUpLinker()
+        }
+    }
+
+    // Test using command-line
+    arrayOf(
+        androidNativeArm64(),
+        androidNativeArm32(),
+        androidNativeX64(),
+        androidNativeX86(),
+        linuxX64(),
+        linuxArm64(),
+    ).forEach {
+        it.binaries.executable {
+            entryPoint = "gobley.uniffi.examples.app.main"
+        }
+    }
+    arrayOf(
+        androidNativeArm64(),
+        androidNativeArm32(),
+        androidNativeX64(),
+        androidNativeX86(),
+    ).forEach {
+        it.compilations.configureEach {
+            compileTaskProvider.configure {
+                val linkerFlagsArg = StringBuilder().apply {
+                    // Override Konan properties to link libunwind.a
+                    append("-Xoverride-konan-properties=linkerKonanFlags.")
+                    append(it.konanTarget.name)
+                    // Copied from https://github.com/JetBrains/kotlin/blob/6dff5659f42b0b90863d10ee503efd5a8ebb1034/kotlin-native/konan/konan.properties#L839
+                    append("=-lm -lc++_static -lc++abi -landroid -llog -latomic ")
+                    // Find the directory containing libunwind.a
+                    val ndkHostTag = when (GobleyHost.Platform.current) {
+                        GobleyHost.Platform.Windows -> "windows-x86_64"
+                        GobleyHost.Platform.MacOS -> "darwin-x86_64"
+                        GobleyHost.Platform.Linux -> "linux-x86_64"
+                    }
+                    val toolchainDir = android.ndkDirectory
+                        .resolve("toolchains/llvm/prebuilt")
+                        .resolve(ndkHostTag)
+                    val clangResourceDir = toolchainDir
+                        .resolve("lib/clang")
+                        .listFiles()
+                        ?.firstOrNull { file -> !file.name.startsWith(".") }
+                        ?: error("Couldn't find Clang resource directory")
+                    val clangRuntimeDir = clangResourceDir
+                        .resolve("lib/linux")
+                        .resolve(
+                            when (it.konanTarget.architecture) {
+                                Architecture.ARM64 -> "aarch64"
+                                Architecture.ARM32 -> "arm"
+                                Architecture.X64 -> "x86_64"
+                                Architecture.X86 -> "i386"
+                            }
+                        )
+                    append("-L${clangRuntimeDir.absolutePath}")
+                }.toString()
+                compilerOptions.freeCompilerArgs.add(linkerFlagsArg)
+            }
         }
     }
 
@@ -47,7 +107,7 @@ kotlin {
     //     }
     //     it.compilations.getByName("main") {
     //         cinterops.register("gtk") {
-    //             defFile("src/linuxMain/cinterop/gtk.def")
+    //             defFile("src/gtkMain/cinterop/gtk.def")
     //             packageName("org.gnome.gitlab.gtk")
     //         }
     //     }
@@ -112,6 +172,21 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.androidx.activity.compose)
+        }
+
+        // val gtkMain by creating
+        // linuxMain {
+        //     dependsOn(gtkMain)
+        // }
+
+        val cmdlineMain by creating {
+            dependsOn(commonMain.get())
+        }
+        androidNativeMain {
+            dependsOn(cmdlineMain)
+        }
+        linuxMain {
+            dependsOn(cmdlineMain)
         }
     }
 }
