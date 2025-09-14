@@ -63,7 +63,12 @@ abstract class FindDynamicLibrariesTask : DefaultTask() {
 
             searchPaths.firstNotNullOfOrNull { searchPath ->
                 searchPath
-                    .resolve(rustTarget.outputFileName(libraryName, CrateType.SystemDynamicLibrary)!!)
+                    .resolve(
+                        rustTarget.outputFileName(
+                            libraryName,
+                            CrateType.SystemDynamicLibrary,
+                        )!!,
+                    )
                     .takeIf(File::exists)
                     ?: searchPath
                         .resolve(libraryName)
@@ -72,7 +77,7 @@ abstract class FindDynamicLibrariesTask : DefaultTask() {
         }
 
         libraryPathsCacheFile.get().asFile.run {
-            parentFile.mkdirs()
+            parentFile?.mkdirs()
             writeText(libraryPaths.joinToString(" ") { it.absolutePath })
         }
     }
