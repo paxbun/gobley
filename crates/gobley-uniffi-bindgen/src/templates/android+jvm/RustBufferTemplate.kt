@@ -46,23 +46,6 @@ internal fun RustBufferByValue.asByteBuffer(): ByteBuffer? {
     return ByteBuffer(data?.getByteBuffer(0L, this.len) ?: return null)
 }
 
-internal class RustBufferByReference : com.sun.jna.ptr.ByReference(16)
-internal fun RustBufferByReference.setValue(value: RustBufferByValue) {
-    // NOTE: The offsets are as they are in the C-like struct.
-    val pointer = getPointer()
-    pointer.setLong(0, value.capacity)
-    pointer.setLong(8, value.len)
-    pointer.setPointer(16, value.data)
-}
-internal fun RustBufferByReference.getValue(): RustBufferByValue {
-    val pointer = getPointer()
-    val value = RustBufferByValue()
-    value.writeField("capacity", pointer.getLong(0))
-    value.writeField("len", pointer.getLong(8))
-    value.writeField("data", pointer.getLong(16))
-    return value
-}
-
 // This is a helper for safely passing byte references into the rust code.
 // It's not actually used at the moment, because there aren't many things that you
 // can take a direct pointer to in the JVM, and if we're going to copy something

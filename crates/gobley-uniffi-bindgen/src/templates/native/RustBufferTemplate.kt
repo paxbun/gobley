@@ -45,23 +45,6 @@
     )
 }
 
-/**
- * The equivalent of the `*mut RustBuffer` type.
- * Required for callbacks taking in an out pointer.
- *
- * Size is the sum of all values in the struct.
- */
-internal typealias RustBufferByReference = CPointer<{{ ci.namespace() }}.cinterop.RustBufferByReference>
-
-internal fun RustBufferByReference.setValue(value: RustBufferByValue) {
-    pointed.capacity = value.capacity
-    pointed.len = value.len
-    pointed.data = value.data?.reinterpret()
-}
-internal fun RustBufferByReference.getValue(): RustBufferByValue
-    = pointed.reinterpret<{{ ci.namespace() }}.cinterop.RustBuffer>().readValue()
-
-
 internal typealias ForeignBytes = CPointer<{{ ci.namespace() }}.cinterop.ForeignBytes>
 internal var ForeignBytes.len: Int
     get() = pointed.len
