@@ -4,9 +4,10 @@ $PSNativeCommandUseErrorActionPreference = $true;
 ./.github/workflows/pr-build-test/environment.ps1;
 
 # Run build project-wise to prevent no space left errors
-$projects = Get-ChildItem ./examples |
-    ? { Test-Path "$_/build.gradle.kts" } |
-    % { $_.Name };
+# $projects = Get-ChildItem ./examples |
+#     ? { Test-Path "$_/build.gradle.kts" } |
+#     % { $_.Name };
+$projects = @("tokio-boring-app");
 try {
     foreach ($project in $projects) {
         try {

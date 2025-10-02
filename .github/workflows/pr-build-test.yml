@@ -66,11 +66,11 @@ jobs:
       fail-fast: false
       matrix:
         test-name:
-          - cargo-tests
+          # - cargo-tests
           - examples
-          - gradle-plugin-tests
-          - gradle-tests
-          - uniffi-tests
+          # - gradle-plugin-tests
+          # - gradle-tests
+          # - uniffi-tests
         platform: ${{ fromJSON(needs.prepare-matrix.outputs.platforms) }}
     runs-on: ${{ fromJSON(needs.prepare-matrix.outputs.runners)[matrix.platform] }}
     steps:

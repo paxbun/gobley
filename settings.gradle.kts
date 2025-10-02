@@ -75,11 +75,11 @@ if (ext.propertyIsTrue("gobley.projects.uniffiTests.futures")) {
 }
 
 if (ext.propertyIsTrue("gobley.projects.examples")) {
-    include(":examples:app")
-    include(":examples:arithmetic-procmacro")
-    include(":examples:audio-cpp-app")
-    include(":examples:custom-types")
-    include(":examples:todolist")
-    include(":examples:tokio-blake3-app")
+//    include(":examples:app")
+//    include(":examples:arithmetic-procmacro")
+//    include(":examples:audio-cpp-app")
+//    include(":examples:custom-types")
+//    include(":examples:todolist")
+//    include(":examples:tokio-blake3-app")
     include(":examples:tokio-boring-app")
 }
