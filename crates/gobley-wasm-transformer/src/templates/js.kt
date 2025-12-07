@@ -1,9 +1,8 @@
 {%- if let Some(package_name) = package_name -%}
 package {{ package_name }}
 
-import org.khronos.webgl.ArrayBuffer
-
 {% endif -%}
+
 private const val BASE64 = "{{ base64 }}"
 
 private external interface Buffer {
@@ -26,7 +25,7 @@ internal external class WebAssembly {
     }
 
     class Memory(descriptor: Any) {
-        val buffer: ArrayBuffer
+        val buffer: org.khronos.webgl.ArrayBuffer
         fun grow(delta: Int)
     }
 
