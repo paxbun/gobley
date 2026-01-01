@@ -35,7 +35,14 @@ abstract class TransformWasmTask : CommandTask() {
     abstract val outputDirectory: DirectoryProperty
 
     @get:Input
+    @get:Optional
+    @Deprecated("TransformWasmTask ignores `crateName`. Use `packageName` instead.")
+    @Suppress("Unused")
     abstract val crateName: Property<String>
+
+    @get:Input
+    @InternalGobleyGradleApi
+    abstract val packageName: Property<String>
 
     @get:InputFile
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -56,10 +63,9 @@ abstract class TransformWasmTask : CommandTask() {
                     mkdirs()
                 }
             }
-            val packageName = "gobley.wasm.${crateName.get().replace('-', '_')}"
             arguments("--input", input.get())
-            arguments("--output", outputDirectory.get().file("$packageName.kt"))
-            arguments("--package-name", packageName)
+            arguments("--output", outputDirectory.get().file("${packageName.get()}.kt"))
+            arguments("--package-name", packageName.get())
             if (functionImportsFile.isPresent) {
                 arguments("--function-imports-file", functionImportsFile.get())
             }

@@ -6,6 +6,7 @@
 
 package gobley.gradle.cargo.dsl
 
+import gobley.gradle.InternalGobleyGradleApi
 import gobley.gradle.Variant
 import gobley.gradle.cargo.tasks.TransformWasmTask
 import gobley.gradle.cargo.utils.register
@@ -13,6 +14,7 @@ import gobley.gradle.rust.CrateType
 import gobley.gradle.rust.targets.RustWasmTarget
 import org.gradle.api.Project
 import javax.inject.Inject
+import kotlin.text.replace
 
 @Suppress("LeakingThis")
 abstract class CargoWasmBuildVariant @Inject constructor(
@@ -41,9 +43,11 @@ abstract class CargoWasmBuildVariant @Inject constructor(
                         .dir(profile.targetChildDirectoryName)
                 }
         )
-        crateName.convention(
+        @OptIn(InternalGobleyGradleApi::class)
+        packageName.convention(
             extension.cargoPackage.map { pkg ->
-                pkg.libraryCrateName
+                val crateName = pkg.libraryCrateName
+                "gobley.wasm.${crateName.replace('-', '_')}"
             }
         )
         dependsOn(buildTaskProvider)
