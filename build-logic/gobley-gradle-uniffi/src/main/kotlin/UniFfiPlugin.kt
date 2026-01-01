@@ -14,6 +14,7 @@ import gobley.gradle.android.GobleyAndroidExtensionDelegate
 import gobley.gradle.cargo.dsl.CargoExtension
 import gobley.gradle.cargo.dsl.CargoJvmBuild
 import gobley.gradle.cargo.dsl.CargoNativeBuild
+import gobley.gradle.cargo.dsl.CargoWasmBuild
 import gobley.gradle.kotlin.GobleyKotlinExtensionDelegate
 import gobley.gradle.rust.CrateType
 import gobley.gradle.rust.targets.RustTarget
@@ -136,12 +137,6 @@ class UniFfiPlugin : Plugin<Project> {
 
     @OptIn(InternalGobleyGradleApi::class)
     private fun Project.checkKotlinTargets() {
-        val hasJsTargets =
-            kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.js }
-        if (hasJsTargets) {
-            project.logger.warn("JS targets are added, but the UniFFI plugin does not support JS targets yet.")
-        }
-
         val hasWasmTargets =
             kotlinExtensionDelegate.targets.any { it.platformType == KotlinPlatformType.wasm }
         if (hasWasmTargets) {
@@ -535,6 +530,15 @@ class UniFfiPlugin : Plugin<Project> {
         @OptIn(InternalGobleyGradleApi::class)
         with(kotlinExtensionDelegate.sourceSets.jsMain) {
             kotlin.srcDir(jsBindingsDirectory)
+        }
+
+        @OptIn(InternalGobleyGradleApi::class)
+        cargoExtension.builds.withType<CargoWasmBuild>().configureEach {
+            variants {
+                transformWasmProvider.configure {
+                    packageName.set(bindingsGeneration.packageName.map { "$it.wasm" })
+                }
+            }
         }
     }
 
