@@ -606,6 +606,7 @@ class CargoPlugin : Plugin<Project> {
     ) {
         val buildTask = cargoBuildVariant.buildTaskProvider
         val checkTask = cargoBuildVariant.checkTaskProvider
+        val wasmTransformTask = cargoBuildVariant.transformWasmProvider
 
         cargoBuildVariant.transformWasmProvider.configure {
             wasmTransformer.set(wasmBindgenInstallTask.get().wasmTransformer)
@@ -622,7 +623,7 @@ class CargoPlugin : Plugin<Project> {
         }
 
         kotlinTarget.compilations.getByName("main") {
-            compileTaskProvider.dependsOn(buildTask)
+            compileTaskProvider.dependsOn(buildTask, wasmTransformTask)
         }
 
         tasks.named("check") {
