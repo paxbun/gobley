@@ -7,23 +7,38 @@
 package gobley.uniffi.tests.gradle.jsonly
 
 import gobley.wasm.gobley_fixture_gradle_js_only.RustWebAssemblyImports
+import gobley.wasm.gobley_fixture_gradle_js_only.addWasmBindgenModuleFactory
+import gobley.wasm.gobley_fixture_gradle_js_only.createInstance
+import gobley.wasm.gobley_fixture_gradle_js_only.wasmBindgenRequire
+import gobley.wasm.gobley_fixture_gradle_js_only.wasmBindgenRequireStem
 import org.khronos.webgl.Int32Array
 
 object RustLibrary {
     private val externalFunctions = mutableListOf<() -> Unit>()
 
-    private val instance =
-        gobley.wasm.gobley_fixture_gradle_js_only.createInstance(
-            RustWebAssemblyImports(
-                env = RustWebAssemblyImports.Import_env(
-                    external_function = ::invokeAllRegisteredExternalFunctions,
-                ),
-                gradle_function_imports = RustWebAssemblyImports.Import_gradle_function_imports(
-                    kotlin_side_function_1 = ::theKotlinFunctionCalledAsFunctionPointer1,
-                    kotlin_side_function_2 = ::theKotlinFunctionCalledAsFunctionPointer2,
-                ),
+    private fun myOuterModule(require: (String) -> dynamic, module: dynamic, exports: dynamic) {
+        exports.outside_function_in_module = {}
+    }
+
+    init {
+        addWasmBindgenModuleFactory("my-outer-module", ::myOuterModule)
+    }
+
+    private val instance = createInstance(
+        RustWebAssemblyImports(
+            env = RustWebAssemblyImports.Import_env(
+                external_function = ::invokeAllRegisteredExternalFunctions,
             ),
-        )
+            gradle_function_imports = RustWebAssemblyImports.Import_gradle_function_imports(
+                kotlin_side_function_1 = ::theKotlinFunctionCalledAsFunctionPointer1,
+                kotlin_side_function_2 = ::theKotlinFunctionCalledAsFunctionPointer2,
+            ),
+            `my-outer-module` = wasmBindgenRequire("my-outer-module"),
+        ),
+    ).apply {
+        wasmBindgenRequireStem().__wbg_set_wasm(exports)
+        exports.__wbindgen_start()
+    }
 
     fun add(lhs: Int, rhs: Int): Int = instance.exports.add(lhs, rhs)
 
@@ -69,5 +84,26 @@ object RustLibrary {
             RustWebAssemblyImports.Import_gradle_function_imports.tblIdx_kotlin_side_function_1,
             RustWebAssemblyImports.Import_gradle_function_imports.tblIdx_kotlin_side_function_2,
         )
+    }
+
+    fun addUsingWasmBindgen(lhs: Int, rhs: Int): Int {
+        return instance.exports.my_wb_add(lhs, rhs)
+    }
+
+    fun callOutsideFunctionsUsingWasmBindgen() {
+        return instance.exports.call_outside_functions()
+    }
+
+    fun addUsingWasmBindgenJsDelegated(lhs: Int, rhs: Int): Int {
+        return instance.exports.add_using_js_delegated(lhs, rhs)
+    }
+
+    fun checkWasmBindgenCanImportVariables() {
+        return instance.exports.check_module_exported_constants()
+    }
+
+    fun createFoo(): dynamic {
+        val foo = wasmBindgenRequireStem().Foo
+        return js("""new foo()""")
     }
 }
