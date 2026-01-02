@@ -9,7 +9,12 @@ plugins {
     alias(libs.plugins.buildconfig)
     `maven-publish`
     alias(libs.plugins.vanniktech.maven.publish)
+    alias(libs.plugins.kotlinx.binary.compatibility.validator)
     id("gobley-gradle-build")
+}
+
+apiValidation {
+    nonPublicMarkers += "gobley.gradle.InternalGobleyGradleApi"
 }
 
 gobleyGradleBuild {
